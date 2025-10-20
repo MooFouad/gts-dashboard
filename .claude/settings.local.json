@@ -1,13 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(nslookup api.elm.sa)",
-      "Bash(ping -n 1 api.elm.sa)",
-      "Bash(ping -n 2 api.elm.sa)",
-      "Bash(curl -s https://api.ipify.org)",
-      "Bash(curl -s https://ifconfig.me)",
-      "Bash(del \"backend\\BACKUP_QUICK_REFERENCE.md\" \"backend\\BACKUP_GUIDE.md\" \"frontend\\README.md\" \"frontend\\TECHNICAL_DOCS.md\" \"frontend\\MONGODB_SETUP.md\")",
-      "Bash(git add .)"
+      "Bash(npm run dev)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :5000)"
     ],
     "deny": [],
     "ask": []

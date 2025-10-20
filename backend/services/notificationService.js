@@ -594,13 +594,30 @@ class NotificationService {
     };
 
     try {
-      const info = await transporter.sendMail(mailOptions);
+      // Add timeout wrapper to prevent hanging (50 seconds to be under frontend's 60s timeout)
+      const sendWithTimeout = (mailOptions, timeout = 50000) => {
+        return Promise.race([
+          transporter.sendMail(mailOptions),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Email sending timeout after 50 seconds')), timeout)
+          )
+        ]);
+      };
+
+      console.log('📧 Sending test email to:', email);
+      const info = await sendWithTimeout(mailOptions);
       console.log('✅ Test email sent successfully:', info.messageId);
       console.log('   To:', email);
       console.log('   App URL:', appUrl);
       return { success: true, message: 'Test email sent successfully', messageId: info.messageId };
     } catch (error) {
       console.error('❌ Failed to send test email:', error);
+
+      // Provide more helpful error messages
+      if (error.message.includes('timeout')) {
+        throw new Error('Email sending timed out. This usually means Gmail servers are slow or unreachable. Please try again in a few moments.');
+      }
+
       throw new Error(`Failed to send email: ${error.message}`);
     }
   }
