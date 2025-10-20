@@ -329,12 +329,14 @@ class PushNotificationService {
     try {
       console.log('Sending test EMAIL notification to:', email);
 
-      // Use direct fetch with timeout for email (40 seconds - backend has 30s timeout)
+      // Use direct fetch with timeout for email (100 seconds - backend has 90s timeout)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 40000); // 40 seconds
+      const timeoutId = setTimeout(() => controller.abort(), 100000); // 100 seconds for production
 
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const token = localStorage.getItem('token');
+
+      console.log('Making request to:', `${API_BASE_URL}/notifications/test`);
 
       const response = await fetch(`${API_BASE_URL}/notifications/test`, {
         method: 'POST',
@@ -350,6 +352,8 @@ class PushNotificationService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('Email test failed with status:', response.status);
+        console.error('Error data:', errorData);
         throw new Error(errorData.error || `Failed to send test email: ${response.status}`);
       }
 
@@ -358,7 +362,7 @@ class PushNotificationService {
       return true;
     } catch (error) {
       if (error.name === 'AbortError') {
-        throw new Error('Email sending timed out after 40 seconds. The email server might be slow or unreachable.');
+        throw new Error('Email sending timed out after 100 seconds. The Gmail SMTP server is not responding. This may be a network or configuration issue on the server.');
       }
       console.error('Error sending test email notification:', error);
       throw error;

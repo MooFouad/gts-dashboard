@@ -18,6 +18,11 @@ const isEmailConfigured = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PA
 
 if (isEmailConfigured) {
   try {
+    console.log('📧 Initializing email transporter...');
+    console.log('   Service:', process.env.EMAIL_SERVICE);
+    console.log('   User:', process.env.EMAIL_USER);
+    console.log('   Pass configured:', process.env.EMAIL_PASS ? 'Yes' : 'No');
+
     transporter = nodemailer.createTransport({
       // Prefer well-known service if provided, else allow host/port configuration
       service: process.env.EMAIL_SERVICE,
@@ -28,27 +33,32 @@ if (isEmailConfigured) {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
       },
-      // Add connection pooling and timeouts
+      // Add connection pooling and timeouts - longer for production
       pool: true,
       maxConnections: 5,
       maxMessages: 10,
       rateDelta: 1000,
       rateLimit: 5,
-      // Connection timeout settings
-      connectionTimeout: 30000, // 30 seconds
-      greetingTimeout: 20000,   // 20 seconds
-      socketTimeout: 45000      // 45 seconds
+      // Longer timeouts for production environments
+      connectionTimeout: 60000, // 60 seconds (production can be slower)
+      greetingTimeout: 30000,   // 30 seconds
+      socketTimeout: 60000,     // 60 seconds
+      // Add debug mode in development
+      debug: process.env.NODE_ENV === 'development',
+      logger: process.env.NODE_ENV === 'development'
     });
 
     transporter.verify((error) => {
       if (error) {
-        console.error('❌ Email configuration error:', error);
+        console.error('❌ Email configuration error:', error.message);
+        console.error('   Code:', error.code);
+        console.error('   Command:', error.command);
       } else {
         console.log('✅ Email server is ready to send messages');
       }
     });
   } catch (err) {
-    console.error('❌ Failed to initialize email transporter:', err);
+    console.error('❌ Failed to initialize email transporter:', err.message);
   }
 } else {
   console.log('ℹ️ Email not configured. Set EMAIL_USER and EMAIL_PASS to enable email notifications.');
@@ -604,18 +614,19 @@ class NotificationService {
     };
 
     try {
-      // Add timeout wrapper to prevent hanging (30 seconds with fast fail)
-      const sendWithTimeout = (mailOptions, timeout = 30000) => {
+      // Add timeout wrapper - 90 seconds for production environments
+      const sendWithTimeout = (mailOptions, timeout = 90000) => {
         return Promise.race([
           transporter.sendMail(mailOptions),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Email sending timeout after 30 seconds')), timeout)
+            setTimeout(() => reject(new Error('Email sending timeout after 90 seconds')), timeout)
           )
         ]);
       };
 
       console.log('📧 Sending test email to:', email);
       console.log('   Using SMTP:', process.env.EMAIL_SERVICE, 'with user:', process.env.EMAIL_USER);
+      console.log('   Environment:', process.env.NODE_ENV);
 
       const startTime = Date.now();
       const info = await sendWithTimeout(mailOptions);
@@ -623,26 +634,35 @@ class NotificationService {
 
       console.log(`✅ Test email sent successfully in ${duration}ms`);
       console.log('   Message ID:', info.messageId);
+      console.log('   Response:', info.response);
       console.log('   To:', email);
       console.log('   App URL:', appUrl);
       return { success: true, message: 'Test email sent successfully', messageId: info.messageId, duration };
     } catch (error) {
-      console.error('❌ Failed to send test email:', error);
+      console.error('❌ Failed to send test email');
+      console.error('   Error message:', error.message);
+      console.error('   Error code:', error.code);
+      console.error('   Error command:', error.command);
+      console.error('   Full error:', error);
 
       // Provide more helpful error messages
       if (error.message.includes('timeout') || error.code === 'ETIMEDOUT' || error.code === 'ESOCKET') {
-        throw new Error('Email sending timed out. Gmail servers may be slow or unreachable. Check your internet connection and try again.');
+        throw new Error('Email sending timed out after 90 seconds. Gmail SMTP server is not responding. This may be due to network restrictions or Gmail blocking the connection. Please check Render logs for details.');
       }
 
       if (error.code === 'EAUTH') {
-        throw new Error('Email authentication failed. Please verify EMAIL_USER and EMAIL_PASS are correct.');
+        throw new Error('Email authentication failed. The EMAIL_USER or EMAIL_PASS (App Password) is incorrect. Please verify your Gmail App Password in Render environment variables.');
       }
 
-      if (error.code === 'ECONNECTION') {
-        throw new Error('Cannot connect to Gmail SMTP server. Check your internet connection.');
+      if (error.code === 'ECONNECTION' || error.code === 'ENOTFOUND') {
+        throw new Error('Cannot connect to Gmail SMTP server. Network connection issue or Gmail is blocking the connection from this server.');
       }
 
-      throw new Error(`Failed to send email: ${error.message}`);
+      if (error.responseCode === 535) {
+        throw new Error('Gmail rejected the login. Make sure you are using an App Password (not your Gmail password). Generate one at: https://myaccount.google.com/apppasswords');
+      }
+
+      throw new Error(`Failed to send email: ${error.message}. Code: ${error.code || 'unknown'}`);
     }
   }
 
