@@ -1,4 +1,5 @@
-const VAPID_PUBLIC_KEY = 'BDSz8C6Y_1LgIxreLI-1...'; // Your VAPID public key
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BDSz8C6Y_1LgIxreLI-1...';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export class NotificationManager {
   static async initialize() {
@@ -43,7 +44,7 @@ export class NotificationManager {
 
   static async sendSubscriptionToServer(subscription) {
     try {
-      const response = await fetch('http://localhost:5000/api/notifications/subscribe', {
+      const response = await fetch(`${API_BASE_URL}/notifications/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

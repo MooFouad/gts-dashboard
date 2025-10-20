@@ -1,4 +1,5 @@
 const publicVapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 class NotificationService {
   static async initialize() {
@@ -31,7 +32,7 @@ class NotificationService {
   }
 
   static async getVapidKey() {
-    const response = await fetch('http://localhost:5000/api/notifications/vapid-public-key');
+    const response = await fetch(`${API_BASE_URL}/notifications/vapid-public-key`);
     if (!response.ok) throw new Error('Failed to get VAPID key');
     const { publicKey } = await response.json();
     return publicKey;
@@ -45,7 +46,7 @@ class NotificationService {
   }
 
   static async sendSubscriptionToServer(subscription) {
-    const response = await fetch('http://localhost:5000/api/notifications/subscribe', {
+    const response = await fetch(`${API_BASE_URL}/notifications/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(subscription)

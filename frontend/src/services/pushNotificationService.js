@@ -328,10 +328,38 @@ class PushNotificationService {
   async sendTestEmail(email) {
     try {
       console.log('Sending test EMAIL notification to:', email);
-      await api.post('/notifications/test', { email });
-      console.log('✅ Test email notification sent');
+
+      // Use direct fetch with longer timeout for email (60 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds
+
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`${API_BASE_URL}/notifications/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify({ email }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to send test email: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Test email notification sent:', data);
       return true;
     } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Email sending timed out after 60 seconds. The email server might be slow.');
+      }
       console.error('Error sending test email notification:', error);
       throw error;
     }

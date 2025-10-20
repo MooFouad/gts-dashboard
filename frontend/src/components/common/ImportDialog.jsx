@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { X, Upload, AlertCircle, CheckCircle } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const ImportDialog = ({ isOpen, onClose, onImport, title, type }) => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -39,7 +41,7 @@ const ImportDialog = ({ isOpen, onClose, onImport, title, type }) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`http://localhost:5000/api/import/${type}`, {
+      const response = await fetch(`${API_BASE_URL}/import/${type}`, {
         method: 'POST',
         body: formData
       });
