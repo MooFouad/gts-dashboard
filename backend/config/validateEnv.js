@@ -6,7 +6,7 @@ const requiredEnvVars = [
   'VAPID_EMAIL',
   'EMAIL_USER',
   'EMAIL_PASS',
-  'EMAIL_SERVICE',
+  // 'EMAIL_SERVICE', // Optional - only needed for Gmail (local dev). Production uses EMAIL_HOST/EMAIL_PORT for Brevo
   'APP_URL'
 ];
 
