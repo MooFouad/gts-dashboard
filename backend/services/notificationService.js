@@ -572,11 +572,17 @@ class NotificationService {
 
       const duration = Date.now() - startTime;
       console.log(`✅ Email sent via Resend in ${duration}ms`);
-      console.log('   Email ID:', result.id);
+      console.log('   Full Resend response:', JSON.stringify(result));
+      console.log('   Email ID:', result.id || result.data?.id);
 
-      return { success: true, message: 'Test email sent successfully via Resend API', emailId: result.id, duration, method: 'Resend API' };
+      // Resend returns either { id: '...' } or { data: { id: '...' } }
+      const emailId = result.id || result.data?.id || 'unknown';
+
+      return { success: true, message: 'Test email sent successfully via Resend API', emailId, duration, method: 'Resend API' };
     } catch (error) {
-      console.error('❌ Resend API failed:', error.message);
+      console.error('❌ Resend API failed:', error);
+      console.error('   Error message:', error.message);
+      console.error('   Error name:', error.name);
       throw error;
     }
   }
