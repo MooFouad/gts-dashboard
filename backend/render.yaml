@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: gts-dashboard-api
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_EMAIL
+        sync: false
+      - key: EMAIL_SERVICE
+        value: gmail
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: NOTIFICATION_DAYS_BEFORE
+        value: 10
+      - key: NOTIFICATION_CHECK_HOUR
+        value: 9
+      - key: TAMM_API_URL
+        value: https://api.elm.sa
+      - key: TAMM_AUTH_URL
+        value: https://idp.elm.sa/auth/realms/Tamm/protocol/openid-connect/token
+      - key: TAMM_REALM_NAME
+        value: Tamm
+      - key: TAMM_CLIENT_ID
+        sync: false
+      - key: TAMM_CLIENT_SECRET
+        sync: false
+      - key: TAMM_CUSTOMER_ID
+        sync: false
+      - key: TAMM_SUBSCRIPTION_KEY
+        value: ""

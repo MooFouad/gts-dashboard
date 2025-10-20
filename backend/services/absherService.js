@@ -1,37 +1,112 @@
 const axios = require('axios');
+const AbsherConfig = require('../models/AbsherConfig');
 
 /**
  * TAMM API Service (Absher Business)
  * Handles authentication and vehicle insurance inquiries
- * All configuration is read from environment variables for security
+ * Configuration is read from database first, then falls back to environment variables
  */
 class TammService {
   constructor() {
     this.accessToken = null;
     this.tokenExpiry = null;
+    this.config = null;
+    this.configLoaded = false;
 
-    // Read config from environment variables
-    this.config = {
-      authUrl: process.env.TAMM_AUTH_URL,
-      apiUrl: process.env.TAMM_API_URL,
-      clientId: process.env.TAMM_CLIENT_ID,
-      clientSecret: process.env.TAMM_CLIENT_SECRET,
-      subscriptionKey: process.env.TAMM_SUBSCRIPTION_KEY
-    };
-
-    console.log('🔧 Absher Service initialized with config from environment variables');
-    console.log(`   Auth URL: ${this.config.authUrl || 'NOT SET'}`);
-    console.log(`   API URL: ${this.config.apiUrl || 'NOT SET'}`);
-    console.log(`   Client ID: ${this.config.clientId ? '***' + this.config.clientId.slice(-4) : 'NOT SET'}`);
+    // Initialize config asynchronously
+    this.initializeConfig();
   }
 
   /**
-   * Get TAMM configuration from environment variables
+   * Initialize configuration from database or environment variables
    */
-  getConfig() {
-    if (!this.config.authUrl || !this.config.apiUrl || !this.config.clientId || !this.config.clientSecret) {
-      throw new Error('TAMM configuration is incomplete. Please check environment variables (TAMM_AUTH_URL, TAMM_API_URL, TAMM_CLIENT_ID, TAMM_CLIENT_SECRET, TAMM_SUBSCRIPTION_KEY)');
+  async initializeConfig() {
+    try {
+      // Try to load from database first
+      const dbConfig = await AbsherConfig.findOne({ status: 'active' });
+
+      if (dbConfig) {
+        // Build auth URL from database config
+        const authUrl = `${dbConfig.authorizationServer}/auth/realms/${dbConfig.realmName}/protocol/openid-connect/token`;
+
+        this.config = {
+          authUrl: authUrl,
+          apiUrl: process.env.TAMM_API_URL || 'https://tamm-qa-api.apps.devocp4.elm.sa',
+          clientId: dbConfig.clientId,
+          clientSecret: dbConfig.clientSecret,
+          subscriptionKey: process.env.TAMM_SUBSCRIPTION_KEY || '',
+          authServer: dbConfig.authorizationServer,
+          realmName: dbConfig.realmName
+        };
+
+        console.log('🔧 Absher Service initialized with DATABASE configuration');
+        console.log(`   Auth URL: ${this.config.authUrl}`);
+        console.log(`   API URL: ${this.config.apiUrl}`);
+        console.log(`   Client ID: ***${this.config.clientId.slice(-4)}`);
+        console.log(`   Realm: ${this.config.realmName}`);
+      } else {
+        // Fallback to environment variables
+        this.config = {
+          authUrl: process.env.TAMM_AUTH_URL,
+          apiUrl: process.env.TAMM_API_URL,
+          clientId: process.env.TAMM_CLIENT_ID,
+          clientSecret: process.env.TAMM_CLIENT_SECRET,
+          subscriptionKey: process.env.TAMM_SUBSCRIPTION_KEY
+        };
+
+        console.log('🔧 Absher Service initialized with ENVIRONMENT VARIABLES (fallback)');
+        console.log(`   Auth URL: ${this.config.authUrl || 'NOT SET'}`);
+        console.log(`   API URL: ${this.config.apiUrl || 'NOT SET'}`);
+        console.log(`   Client ID: ${this.config.clientId ? '***' + this.config.clientId.slice(-4) : 'NOT SET'}`);
+      }
+
+      this.configLoaded = true;
+    } catch (error) {
+      console.error('❌ Error loading config from database, using environment variables:', error.message);
+
+      // Fallback to environment variables on error
+      this.config = {
+        authUrl: process.env.TAMM_AUTH_URL,
+        apiUrl: process.env.TAMM_API_URL,
+        clientId: process.env.TAMM_CLIENT_ID,
+        clientSecret: process.env.TAMM_CLIENT_SECRET,
+        subscriptionKey: process.env.TAMM_SUBSCRIPTION_KEY
+      };
+
+      this.configLoaded = true;
     }
+  }
+
+  /**
+   * Reload configuration from database
+   */
+  async reloadConfig() {
+    this.configLoaded = false;
+    await this.initializeConfig();
+    // Clear token cache when config changes
+    this.accessToken = null;
+    this.tokenExpiry = null;
+  }
+
+  /**
+   * Get TAMM configuration (wait for config to load if needed)
+   */
+  async getConfig() {
+    // Wait for config to be loaded
+    let attempts = 0;
+    while (!this.configLoaded && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+
+    if (!this.config) {
+      throw new Error('TAMM configuration not loaded. Please check database or environment variables.');
+    }
+
+    if (!this.config.authUrl || !this.config.apiUrl || !this.config.clientId || !this.config.clientSecret) {
+      throw new Error('TAMM configuration is incomplete. Please check database configuration or environment variables (TAMM_AUTH_URL, TAMM_API_URL, TAMM_CLIENT_ID, TAMM_CLIENT_SECRET)');
+    }
+
     return this.config;
   }
 
@@ -41,7 +116,7 @@ class TammService {
    */
   async generateAccessToken() {
     try {
-      const config = this.getConfig();
+      const config = await this.getConfig();
 
       // Check if we have a valid token already
       if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
@@ -50,6 +125,7 @@ class TammService {
       }
 
       console.log('🔄 Generating new TAMM access token...');
+      console.log('🔗 Auth URL:', config.authUrl);
 
       const params = new URLSearchParams();
       params.append('client_id', config.clientId);
@@ -101,7 +177,7 @@ class TammService {
       console.log(`📋 Input Plate Number: ${plateNumber}`);
       console.log(`📋 Input Sequence Number: ${sequenceNumber}`);
 
-      const config = this.getConfig();
+      const config = await this.getConfig();
       const accessToken = await this.generateAccessToken();
 
       // TAMM API endpoint for vehicle insurance
@@ -234,7 +310,7 @@ class TammService {
       console.log(`📋 Input Plate Number: ${plateNumber}`);
       console.log(`📋 Input Sequence Number: ${sequenceNumber}`);
 
-      const config = this.getConfig();
+      const config = await this.getConfig();
       const accessToken = await this.generateAccessToken();
 
       // TAMM API endpoint for MVPI
@@ -354,7 +430,7 @@ class TammService {
       console.log(`📋 Input Plate Number: ${JSON.stringify(plateNumber)}`);
       console.log(`📋 Input Sequence Number: ${sequenceNumber}`);
 
-      const config = this.getConfig();
+      const config = await this.getConfig();
       const accessToken = await this.generateAccessToken();
 
       // TAMM API endpoint for Istemarah renewal
@@ -465,7 +541,7 @@ class TammService {
       console.log(`📋 Input Plate Number: ${JSON.stringify(plateNumber)}`);
       console.log(`📋 Input Sequence Number: ${sequenceNumber}`);
 
-      const config = this.getConfig();
+      const config = await this.getConfig();
       const accessToken = await this.generateAccessToken();
 
       // TAMM API endpoint for Istemarah renewal details

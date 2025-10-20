@@ -1,12 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(del ABSHER_NETWORK_ISSUE.md)",
-      "Bash(del ABSHER_QUICK_REFERENCE.md)",
-      "Bash(del ABSHER_SYNC_FIX.md)",
-      "Bash(rm ABSHER_NETWORK_ISSUE.md ABSHER_QUICK_REFERENCE.md ABSHER_SYNC_FIX.md)",
-      "Bash(rm NETWORK_ERROR_TROUBLESHOOTING.md)",
-      "Bash(rm -f *.md)"
+      "Bash(nslookup api.elm.sa)",
+      "Bash(ping -n 1 api.elm.sa)",
+      "Bash(ping -n 2 api.elm.sa)",
+      "Bash(curl -s https://api.ipify.org)",
+      "Bash(curl -s https://ifconfig.me)",
+      "Bash(del \"backend\\BACKUP_QUICK_REFERENCE.md\" \"backend\\BACKUP_GUIDE.md\" \"frontend\\README.md\" \"frontend\\TECHNICAL_DOCS.md\" \"frontend\\MONGODB_SETUP.md\")",
+      "Bash(git add .)"
     ],
     "deny": [],
     "ask": []

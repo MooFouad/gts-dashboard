@@ -10,13 +10,13 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const AbsherIntegrationSettings = () => {
   const [activeTab, setActiveTab] = useState('smart'); // smart or subscriptions
   const [config, setConfig] = useState({
-    clientId: '',
-    clientSecret: '',
-    authorizationServer: 'https://iam.apps.devnet.elm.sa',
-    realmName: 'tamm-QA',
-    linkId: '',
+    clientId: '3fd125a2',  // معرف الربط (Link ID)
+    clientSecret: '42d53a3e57bfc9e87a7391c3ce633ce1',  // الكتلة السرية
+    authorizationServer: 'https://idp.elm.sa',  // خادم المصادقة للإنتاج
+    realmName: 'Tamm',  // اسم المجال للإنتاج
+    linkId: '3fd125a2',  // نفس معرف الربط
     status: 'active',
-    notes: ''
+    notes: 'Production Environment - Live Configuration'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,13 +39,13 @@ const AbsherIntegrationSettings = () => {
       if (response.data.data) {
         setExistingConfig(response.data.data);
         setConfig({
-          clientId: response.data.data.clientId || '',
-          clientSecret: response.data.data.clientSecret || '',
-          authorizationServer: response.data.data.authorizationServer || 'https://iam.apps.devnet.elm.sa',
-          realmName: response.data.data.realmName || 'tamm-QA',
-          linkId: response.data.data.linkId || '',
+          clientId: response.data.data.clientId || '3fd125a2',
+          clientSecret: response.data.data.clientSecret || '42d53a3e57bfc9e87a7391c3ce633ce1',
+          authorizationServer: response.data.data.authorizationServer || 'https://idp.elm.sa',
+          realmName: response.data.data.realmName || 'Tamm',
+          linkId: response.data.data.linkId || '3fd125a2',
           status: response.data.data.status || 'active',
-          notes: response.data.data.notes || ''
+          notes: response.data.data.notes || 'Production Environment - Live Configuration'
         });
       }
     } catch (error) {
@@ -176,7 +176,7 @@ const AbsherIntegrationSettings = () => {
                 value={config.clientId}
                 onChange={(e) => setConfig({ ...config, clientId: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="7001486054"
+                placeholder="3fd125a2"
                 required
               />
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">
@@ -195,7 +195,7 @@ const AbsherIntegrationSettings = () => {
               value={config.linkId}
               onChange={(e) => setConfig({ ...config, linkId: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="3f6f125a2"
+              placeholder="3fd125a2"
             />
           </div>
 
@@ -224,7 +224,7 @@ const AbsherIntegrationSettings = () => {
               value={config.authorizationServer}
               onChange={(e) => setConfig({ ...config, authorizationServer: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="https://iam.apps.devnet.elm.sa"
+              placeholder="https://idp.elm.sa"
               required
             />
           </div>
@@ -239,7 +239,7 @@ const AbsherIntegrationSettings = () => {
               value={config.realmName}
               onChange={(e) => setConfig({ ...config, realmName: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="tamm-QA"
+              placeholder="Tamm"
               required
             />
           </div>

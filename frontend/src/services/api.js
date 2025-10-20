@@ -8,47 +8,6 @@ const getAuthToken = () => {
   return localStorage.getItem('token');
 };
 
-// Function to test server availability
-const testServerConnection = async (port) => {
-  try {
-    const response = await fetch(`http://localhost:${port}/api/health`);
-    if (response.ok) {
-      return port;
-    }
-  } catch (error) {
-    console.log(`Port ${port} not responding`);
-  }
-  return null;
-};
-
-// Find available server port
-const findServerPort = async () => {
-  const port = 5000;
-  const available = await testServerConnection(port);
-  if (available) {
-    return `http://localhost:${port}/api`;
-  }
-  throw new Error('Could not connect to server on port 5000');
-};
-
-// Initialize API URL
-let apiBaseUrl = API_BASE_URL;
-let connectionAttempted = false;
-
-const initializeApi = async () => {
-  if (!connectionAttempted) {
-    connectionAttempted = true;
-    try {
-      const url = await findServerPort();
-      apiBaseUrl = url;
-      console.log('Connected to server at:', url);
-    } catch (error) {
-      console.error('Server connection error:', error);
-      apiBaseUrl = API_BASE_URL;
-    }
-  }
-};
-
 class ApiService {
   constructor(baseURL) {
     this.baseURL = baseURL;

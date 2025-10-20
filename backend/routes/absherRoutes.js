@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Vehicle = require('../models/Vehicle');
+const AbsherConfig = require('../models/AbsherConfig');
 const absherService = require('../services/absherService');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -270,6 +271,155 @@ router.post('/istemarah/renew-vehicle/:id', async (req, res, next) => {
     });
   } catch (error) {
     console.error('❌ Error requesting Istemarah renewal:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/absher/config
+ * Get Absher configuration
+ */
+router.get('/config', async (req, res, next) => {
+  try {
+    const config = await AbsherConfig.findOne({ status: 'active' });
+
+    if (!config) {
+      // Return default configuration from environment variables
+      return res.json({
+        success: true,
+        data: {
+          clientId: process.env.TAMM_CLIENT_ID || '3fd125a2',
+          authorizationServer: process.env.TAMM_AUTH_URL?.replace('/auth/realms/Tamm-QA/protocol/openid-connect/token', '') || 'https://idp.apps.devocp4.elm.sa',
+          realmName: process.env.TAMM_REALM_NAME || 'Tamm-QA',
+          status: 'active'
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: config
+    });
+  } catch (error) {
+    console.error('Get config error:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/absher/config/full
+ * Get full Absher configuration (including sensitive data - masked)
+ */
+router.get('/config/full', async (req, res, next) => {
+  try {
+    const config = await AbsherConfig.findOne({ status: 'active' });
+
+    if (!config) {
+      return res.json({
+        success: true,
+        data: null
+      });
+    }
+
+    // Mask the client secret for security
+    const configData = config.toObject();
+    if (configData.clientSecret) {
+      configData.clientSecret = '••••••••' + configData.clientSecret.slice(-4);
+    }
+
+    res.json({
+      success: true,
+      data: configData
+    });
+  } catch (error) {
+    console.error('Get full config error:', error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/absher/config
+ * Save Absher configuration
+ */
+router.post('/config', async (req, res, next) => {
+  try {
+    const { clientId, clientSecret, authorizationServer, realmName, linkId, status, notes } = req.body;
+
+    // Check if configuration already exists
+    let config = await AbsherConfig.findOne({ status: 'active' });
+
+    const configData = {
+      clientId: clientId || '3fd125a2',
+      clientSecret: clientSecret || process.env.TAMM_CLIENT_SECRET,
+      authorizationServer: authorizationServer || 'https://idp.apps.devocp4.elm.sa',
+      realmName: realmName || 'Tamm-QA',
+      linkId: linkId || clientId,
+      status: status || 'active',
+      notes: notes || '',
+      lastUpdated: new Date()
+    };
+
+    if (config) {
+      // Update existing configuration
+      config = await AbsherConfig.findByIdAndUpdate(
+        config._id,
+        configData,
+        { new: true }
+      );
+    } else {
+      // Create new configuration
+      config = await AbsherConfig.create(configData);
+    }
+
+    console.log('✅ Absher configuration saved successfully');
+
+    // Reload the service configuration
+    await absherService.reloadConfig();
+    console.log('✅ Absher service configuration reloaded');
+
+    res.json({
+      success: true,
+      message: 'Configuration saved successfully',
+      data: config
+    });
+  } catch (error) {
+    console.error('Save config error:', error);
+    next(error);
+  }
+});
+
+/**
+ * PUT /api/absher/config/:id
+ * Update Absher configuration
+ */
+router.put('/config/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const config = await AbsherConfig.findByIdAndUpdate(
+      id,
+      { ...updates, lastUpdated: new Date() },
+      { new: true }
+    );
+
+    if (!config) {
+      return next(new AppError('Configuration not found', 404));
+    }
+
+    console.log('✅ Absher configuration updated successfully');
+
+    // Reload the service configuration
+    await absherService.reloadConfig();
+    console.log('✅ Absher service configuration reloaded');
+
+    res.json({
+      success: true,
+      message: 'Configuration updated successfully',
+      data: config
+    });
+  } catch (error) {
+    console.error('Update config error:', error);
     next(error);
   }
 });

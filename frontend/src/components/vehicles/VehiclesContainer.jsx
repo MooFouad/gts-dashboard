@@ -208,26 +208,6 @@ const VehiclesContainer = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <h2 className="text-xl font-semibold">Vehicles</h2>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={handleAbsherSync}
-            disabled={syncing}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            title="Sync all vehicles with Absher API"
-          >
-            {syncing ? (
-              <>
-                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Syncing...
-              </>
-            ) : (
-              <>
-                🔄 Sync with Absher
-              </>
-            )}
-          </button>
           <ExportButton onClick={handleExport} label="Export Vehicles" />
           <button
             onClick={handleCreate}
@@ -237,32 +217,6 @@ const VehiclesContainer = () => {
           </button>
         </div>
       </div>
-
-      {/* Sync Result Display */}
-      {syncResult && (
-        <div className={`p-4 rounded-lg mb-4 ${syncResult.successful > 0 ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
-          <h3 className="font-semibold mb-2">Absher Sync Result:</h3>
-          <div className="text-sm space-y-1">
-            <p>✅ Successful: {syncResult.successful} vehicles</p>
-            <p>❌ Failed: {syncResult.failed} vehicles</p>
-            {syncResult.errors && syncResult.errors.length > 0 && (
-              <details className="mt-2">
-                <summary className="cursor-pointer text-red-600">View Errors</summary>
-                <ul className="mt-2 space-y-1 text-xs">
-                  {syncResult.errors.slice(0, 10).map((err, idx) => (
-                    <li key={idx} className="text-red-700">
-                      {err.plateNumber || err.vehicle}: {err.error}
-                    </li>
-                  ))}
-                  {syncResult.errors.length > 10 && (
-                    <li className="text-gray-600 italic">... and {syncResult.errors.length - 10} more errors</li>
-                  )}
-                </ul>
-              </details>
-            )}
-          </div>
-        </div>
-      )}
 
       <Toolbar
         searchTerm={searchTerm}

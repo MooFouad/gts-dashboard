@@ -23,7 +23,7 @@ const absherConfigSchema = new mongoose.Schema({
   authorizationServer: {
     type: String,
     required: true,
-    default: 'https://iam.apps.devnet.elm.sa',
+    default: 'https://idp.apps.devocp4.elm.sa',
     trim: true
   },
 
@@ -31,7 +31,7 @@ const absherConfigSchema = new mongoose.Schema({
   realmName: {
     type: String,
     required: true,
-    default: 'tamm-QA',
+    default: 'Tamm-QA',
     trim: true
   },
 

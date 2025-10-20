@@ -8,4 +8,18 @@ export default defineConfig({
     port: 5173,
     strictPort: true, // Exit if port is already in use
   },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          utils: ['axios', 'xlsx']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  }
 })
