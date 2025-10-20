@@ -1,5 +1,6 @@
 const webpush = require('web-push');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const PushSubscription = require('../models/PushSubscription');
 const Vehicle = require('../models/Vehicle');
 const HomeRent = require('../models/HomeRent');
@@ -12,9 +13,11 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY
 );
 
-// Configure Email (optional)
+// Configure Email (optional) - Support both SMTP and Resend API
 let transporter = null;
+let resendClient = null;
 const isEmailConfigured = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+const isResendConfigured = Boolean(process.env.RESEND_API_KEY);
 
 if (isEmailConfigured) {
   try {
@@ -61,7 +64,24 @@ if (isEmailConfigured) {
     console.error('❌ Failed to initialize email transporter:', err.message);
   }
 } else {
-  console.log('ℹ️ Email not configured. Set EMAIL_USER and EMAIL_PASS to enable email notifications.');
+  console.log('ℹ️ SMTP Email not configured.');
+}
+
+// Configure Resend API (fallback for environments that block SMTP)
+if (isResendConfigured) {
+  try {
+    console.log('📧 Initializing Resend API client...');
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+    console.log('✅ Resend API client initialized');
+  } catch (err) {
+    console.error('❌ Failed to initialize Resend client:', err.message);
+  }
+} else {
+  console.log('ℹ️ Resend API not configured.');
+}
+
+if (!isEmailConfigured && !isResendConfigured) {
+  console.log('⚠️ No email service configured. Set either EMAIL_USER/EMAIL_PASS or RESEND_API_KEY to enable email notifications.');
 }
 
 class NotificationService {
@@ -532,7 +552,36 @@ class NotificationService {
     return { total: notifications.length, sent: pushSent + emailSent, push: pushSent, email: emailSent };
   }
 
-  // Manual trigger for testing (email only)
+  // Helper method to send email via Resend API
+  async sendViaResend(email, subject, htmlContent, textContent) {
+    if (!resendClient) {
+      throw new Error('Resend API is not configured');
+    }
+
+    try {
+      console.log('📧 Sending via Resend API to:', email);
+      const startTime = Date.now();
+
+      const result = await resendClient.emails.send({
+        from: 'GTS Dashboard <onboarding@resend.dev>', // Resend test domain
+        to: email,
+        subject: subject,
+        html: htmlContent,
+        text: textContent
+      });
+
+      const duration = Date.now() - startTime;
+      console.log(`✅ Email sent via Resend in ${duration}ms`);
+      console.log('   Email ID:', result.id);
+
+      return { success: true, message: 'Test email sent successfully via Resend API', emailId: result.id, duration, method: 'Resend API' };
+    } catch (error) {
+      console.error('❌ Resend API failed:', error.message);
+      throw error;
+    }
+  }
+
+  // Manual trigger for testing (email only) - Try SMTP first, fallback to Resend
   async sendTestNotification(email) {
     const appUrl = process.env.APP_URL || 'https://gts-fullstack.vercel.app';
 
@@ -601,69 +650,72 @@ class NotificationService {
       </html>
     `;
 
-    if (!transporter) {
-      throw new Error('Email service is not configured. Please check EMAIL_USER and EMAIL_PASS environment variables.');
-    }
+    const subject = '🧪 Test Email - GTS Dashboard Notification System';
+    const textContent = `Test Email Notification\n\nThis is a test email from GTS Dashboard.\n\nYour notification system is working correctly!\n\nDashboard: ${appUrl}`;
 
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || 'GTS Dashboard <noreply@gts-dashboard.com>',
-      to: email,
-      subject: '🧪 Test Email - GTS Dashboard Notification System',
-      html: htmlContent,
-      text: `Test Email Notification\n\nThis is a test email from GTS Dashboard.\n\nYour notification system is working correctly!\n\nDashboard: ${appUrl}`
-    };
-
-    try {
-      // Add timeout wrapper - 90 seconds for production environments
-      const sendWithTimeout = (mailOptions, timeout = 90000) => {
-        return Promise.race([
-          transporter.sendMail(mailOptions),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Email sending timeout after 90 seconds')), timeout)
-          )
-        ]);
+    // Try SMTP first (if configured)
+    if (transporter) {
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || 'GTS Dashboard <noreply@gts-dashboard.com>',
+        to: email,
+        subject: subject,
+        html: htmlContent,
+        text: textContent
       };
 
-      console.log('📧 Sending test email to:', email);
-      console.log('   Using SMTP:', process.env.EMAIL_SERVICE, 'with user:', process.env.EMAIL_USER);
-      console.log('   Environment:', process.env.NODE_ENV);
+      try {
+        // Add timeout wrapper - 30 seconds for faster failover to Resend
+        const sendWithTimeout = (mailOptions, timeout = 30000) => {
+          return Promise.race([
+            transporter.sendMail(mailOptions),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('SMTP timeout after 30 seconds')), timeout)
+            )
+          ]);
+        };
 
-      const startTime = Date.now();
-      const info = await sendWithTimeout(mailOptions);
-      const duration = Date.now() - startTime;
+        console.log('📧 Trying SMTP first...');
+        console.log('   Using SMTP:', process.env.EMAIL_SERVICE, 'with user:', process.env.EMAIL_USER);
 
-      console.log(`✅ Test email sent successfully in ${duration}ms`);
-      console.log('   Message ID:', info.messageId);
-      console.log('   Response:', info.response);
-      console.log('   To:', email);
-      console.log('   App URL:', appUrl);
-      return { success: true, message: 'Test email sent successfully', messageId: info.messageId, duration };
-    } catch (error) {
-      console.error('❌ Failed to send test email');
-      console.error('   Error message:', error.message);
-      console.error('   Error code:', error.code);
-      console.error('   Error command:', error.command);
-      console.error('   Full error:', error);
+        const startTime = Date.now();
+        const info = await sendWithTimeout(mailOptions);
+        const duration = Date.now() - startTime;
 
-      // Provide more helpful error messages
-      if (error.message.includes('timeout') || error.code === 'ETIMEDOUT' || error.code === 'ESOCKET') {
-        throw new Error('Email sending timed out after 90 seconds. Gmail SMTP server is not responding. This may be due to network restrictions or Gmail blocking the connection. Please check Render logs for details.');
+        console.log(`✅ Test email sent successfully via SMTP in ${duration}ms`);
+        console.log('   Message ID:', info.messageId);
+        console.log('   Method: Gmail SMTP');
+        return { success: true, message: 'Test email sent successfully via Gmail SMTP', messageId: info.messageId, duration, method: 'Gmail SMTP' };
+      } catch (smtpError) {
+        console.warn('⚠️ SMTP failed:', smtpError.code || smtpError.message);
+        console.log('🔄 Falling back to Resend API...');
+
+        // If SMTP fails and Resend is configured, try Resend
+        if (resendClient) {
+          try {
+            return await this.sendViaResend(email, subject, htmlContent, textContent);
+          } catch (resendError) {
+            console.error('❌ Both SMTP and Resend failed');
+            throw new Error(`Email sending failed. SMTP error: ${smtpError.message}. Resend error: ${resendError.message}`);
+          }
+        }
+
+        // No Resend configured, throw SMTP error with helpful message
+        if (smtpError.code === 'ETIMEDOUT' || smtpError.code === 'ESOCKET') {
+          throw new Error('Gmail SMTP is blocked on this server (Render Free tier blocks SMTP). Please configure RESEND_API_KEY in environment variables. Get your API key at: https://resend.com');
+        }
+
+        throw new Error(`SMTP failed: ${smtpError.message}. Consider using Resend API for production.`);
       }
-
-      if (error.code === 'EAUTH') {
-        throw new Error('Email authentication failed. The EMAIL_USER or EMAIL_PASS (App Password) is incorrect. Please verify your Gmail App Password in Render environment variables.');
-      }
-
-      if (error.code === 'ECONNECTION' || error.code === 'ENOTFOUND') {
-        throw new Error('Cannot connect to Gmail SMTP server. Network connection issue or Gmail is blocking the connection from this server.');
-      }
-
-      if (error.responseCode === 535) {
-        throw new Error('Gmail rejected the login. Make sure you are using an App Password (not your Gmail password). Generate one at: https://myaccount.google.com/apppasswords');
-      }
-
-      throw new Error(`Failed to send email: ${error.message}. Code: ${error.code || 'unknown'}`);
     }
+
+    // No SMTP configured, try Resend
+    if (resendClient) {
+      console.log('📧 SMTP not configured, using Resend API...');
+      return await this.sendViaResend(email, subject, htmlContent, textContent);
+    }
+
+    // Neither SMTP nor Resend configured
+    throw new Error('No email service configured. Please set either EMAIL_USER/EMAIL_PASS (Gmail SMTP) or RESEND_API_KEY (Resend API) in environment variables.');
   }
 
   // Manual trigger for testing push notifications (no email)
