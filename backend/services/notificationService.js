@@ -1,6 +1,5 @@
 const webpush = require('web-push');
 const nodemailer = require('nodemailer');
-const { Resend } = require('resend');
 const PushSubscription = require('../models/PushSubscription');
 const Vehicle = require('../models/Vehicle');
 const HomeRent = require('../models/HomeRent');
@@ -13,16 +12,16 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY
 );
 
-// Configure Email (optional) - Support both SMTP and Resend API
+// Configure Email (SMTP only - Gmail for local, Brevo for production)
 let transporter = null;
-let resendClient = null;
 const isEmailConfigured = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
-const isResendConfigured = Boolean(process.env.RESEND_API_KEY);
 
 if (isEmailConfigured) {
   try {
     console.log('📧 Initializing email transporter...');
-    console.log('   Service:', process.env.EMAIL_SERVICE);
+    const smtpProvider = process.env.EMAIL_HOST ? 'Brevo' : (process.env.EMAIL_SERVICE || 'Custom');
+    console.log('   Provider:', smtpProvider);
+    console.log('   Host:', process.env.EMAIL_HOST || 'default');
     console.log('   User:', process.env.EMAIL_USER);
     console.log('   Pass configured:', process.env.EMAIL_PASS ? 'Yes' : 'No');
 
@@ -36,16 +35,16 @@ if (isEmailConfigured) {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
       },
-      // Add connection pooling and timeouts - longer for production
+      // Add connection pooling and timeouts
       pool: true,
       maxConnections: 5,
       maxMessages: 10,
       rateDelta: 1000,
       rateLimit: 5,
-      // Longer timeouts for production environments
-      connectionTimeout: 60000, // 60 seconds (production can be slower)
-      greetingTimeout: 30000,   // 30 seconds
-      socketTimeout: 60000,     // 60 seconds
+      // Optimized timeouts for Brevo (faster than Gmail)
+      connectionTimeout: 20000, // 20 seconds
+      greetingTimeout: 15000,   // 15 seconds
+      socketTimeout: 30000,     // 30 seconds
       // Add debug mode in development
       debug: process.env.NODE_ENV === 'development',
       logger: process.env.NODE_ENV === 'development'
@@ -57,31 +56,14 @@ if (isEmailConfigured) {
         console.error('   Code:', error.code);
         console.error('   Command:', error.command);
       } else {
-        console.log('✅ Email server is ready to send messages');
+        console.log(`✅ Email server is ready to send messages (${smtpProvider})`);
       }
     });
   } catch (err) {
     console.error('❌ Failed to initialize email transporter:', err.message);
   }
 } else {
-  console.log('ℹ️ SMTP Email not configured.');
-}
-
-// Configure Resend API (fallback for environments that block SMTP)
-if (isResendConfigured) {
-  try {
-    console.log('📧 Initializing Resend API client...');
-    resendClient = new Resend(process.env.RESEND_API_KEY);
-    console.log('✅ Resend API client initialized');
-  } catch (err) {
-    console.error('❌ Failed to initialize Resend client:', err.message);
-  }
-} else {
-  console.log('ℹ️ Resend API not configured.');
-}
-
-if (!isEmailConfigured && !isResendConfigured) {
-  console.log('⚠️ No email service configured. Set either EMAIL_USER/EMAIL_PASS or RESEND_API_KEY to enable email notifications.');
+  console.log('⚠️ Email not configured. Set EMAIL_USER, EMAIL_PASS, and optionally EMAIL_HOST/EMAIL_PORT.');
 }
 
 class NotificationService {
@@ -552,42 +534,7 @@ class NotificationService {
     return { total: notifications.length, sent: pushSent + emailSent, push: pushSent, email: emailSent };
   }
 
-  // Helper method to send email via Resend API
-  async sendViaResend(email, subject, htmlContent, textContent) {
-    if (!resendClient) {
-      throw new Error('Resend API is not configured');
-    }
-
-    try {
-      console.log('📧 Sending via Resend API to:', email);
-      const startTime = Date.now();
-
-      const result = await resendClient.emails.send({
-        from: 'GTS Dashboard <onboarding@resend.dev>', // Resend test domain
-        to: email,
-        subject: subject,
-        html: htmlContent,
-        text: textContent
-      });
-
-      const duration = Date.now() - startTime;
-      console.log(`✅ Email sent via Resend in ${duration}ms`);
-      console.log('   Full Resend response:', JSON.stringify(result));
-      console.log('   Email ID:', result.id || result.data?.id);
-
-      // Resend returns either { id: '...' } or { data: { id: '...' } }
-      const emailId = result.id || result.data?.id || 'unknown';
-
-      return { success: true, message: 'Test email sent successfully via Resend API', emailId, duration, method: 'Resend API' };
-    } catch (error) {
-      console.error('❌ Resend API failed:', error);
-      console.error('   Error message:', error.message);
-      console.error('   Error name:', error.name);
-      throw error;
-    }
-  }
-
-  // Manual trigger for testing (email only) - Try SMTP first, fallback to Resend
+  // Manual trigger for testing (email only) - SMTP only (Gmail for local, Brevo for production)
   async sendTestNotification(email) {
     const appUrl = process.env.APP_URL || 'https://gts-fullstack.vercel.app';
 
@@ -659,69 +606,63 @@ class NotificationService {
     const subject = '🧪 Test Email - GTS Dashboard Notification System';
     const textContent = `Test Email Notification\n\nThis is a test email from GTS Dashboard.\n\nYour notification system is working correctly!\n\nDashboard: ${appUrl}`;
 
-    // Try SMTP first (if configured)
-    if (transporter) {
-      const mailOptions = {
-        from: process.env.EMAIL_FROM || 'GTS Dashboard <noreply@gts-dashboard.com>',
-        to: email,
-        subject: subject,
-        html: htmlContent,
-        text: textContent
+    if (!transporter) {
+      throw new Error('Email service is not configured. Please set EMAIL_USER, EMAIL_PASS, and optionally EMAIL_HOST/EMAIL_PORT (for Brevo) in environment variables.');
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'GTS Dashboard <noreply@gts-dashboard.com>',
+      to: email,
+      subject: subject,
+      html: htmlContent,
+      text: textContent
+    };
+
+    try {
+      // Add timeout wrapper - 10 seconds for Brevo (faster than Gmail)
+      const sendWithTimeout = (mailOptions, timeout = 10000) => {
+        return Promise.race([
+          transporter.sendMail(mailOptions),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('SMTP timeout after 10 seconds')), timeout)
+          )
+        ]);
       };
 
-      try {
-        // Add timeout wrapper - 30 seconds for faster failover to Resend
-        const sendWithTimeout = (mailOptions, timeout = 30000) => {
-          return Promise.race([
-            transporter.sendMail(mailOptions),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('SMTP timeout after 30 seconds')), timeout)
-            )
-          ]);
-        };
+      const smtpProvider = process.env.EMAIL_HOST ? 'Brevo SMTP' : 'Gmail SMTP';
+      console.log('📧 Sending test email via', smtpProvider);
+      console.log('   To:', email);
+      console.log('   Host:', process.env.EMAIL_HOST || 'default (Gmail)');
 
-        console.log('📧 Trying SMTP first...');
-        console.log('   Using SMTP:', process.env.EMAIL_SERVICE, 'with user:', process.env.EMAIL_USER);
+      const startTime = Date.now();
+      const info = await sendWithTimeout(mailOptions);
+      const duration = Date.now() - startTime;
 
-        const startTime = Date.now();
-        const info = await sendWithTimeout(mailOptions);
-        const duration = Date.now() - startTime;
+      console.log(`✅ Test email sent successfully via ${smtpProvider} in ${duration}ms`);
+      console.log('   Message ID:', info.messageId);
+      console.log('   Response:', info.response);
+      return { success: true, message: `Test email sent successfully via ${smtpProvider}`, messageId: info.messageId, duration, method: smtpProvider };
+    } catch (error) {
+      console.error('❌ Failed to send test email');
+      console.error('   Error message:', error.message);
+      console.error('   Error code:', error.code);
+      console.error('   Error command:', error.command);
 
-        console.log(`✅ Test email sent successfully via SMTP in ${duration}ms`);
-        console.log('   Message ID:', info.messageId);
-        console.log('   Method: Gmail SMTP');
-        return { success: true, message: 'Test email sent successfully via Gmail SMTP', messageId: info.messageId, duration, method: 'Gmail SMTP' };
-      } catch (smtpError) {
-        console.warn('⚠️ SMTP failed:', smtpError.code || smtpError.message);
-        console.log('🔄 Falling back to Resend API...');
-
-        // If SMTP fails and Resend is configured, try Resend
-        if (resendClient) {
-          try {
-            return await this.sendViaResend(email, subject, htmlContent, textContent);
-          } catch (resendError) {
-            console.error('❌ Both SMTP and Resend failed');
-            throw new Error(`Email sending failed. SMTP error: ${smtpError.message}. Resend error: ${resendError.message}`);
-          }
-        }
-
-        // No Resend configured, throw SMTP error with helpful message
-        if (smtpError.code === 'ETIMEDOUT' || smtpError.code === 'ESOCKET') {
-          throw new Error('Gmail SMTP is blocked on this server (Render Free tier blocks SMTP). Please configure RESEND_API_KEY in environment variables. Get your API key at: https://resend.com');
-        }
-
-        throw new Error(`SMTP failed: ${smtpError.message}. Consider using Resend API for production.`);
+      // Provide helpful error messages
+      if (error.message.includes('timeout') || error.code === 'ETIMEDOUT' || error.code === 'ESOCKET') {
+        throw new Error('SMTP connection timed out. If on Render Free tier, Gmail SMTP is blocked. Please use Brevo SMTP instead: Set EMAIL_HOST=smtp-relay.brevo.com, EMAIL_PORT=587, and get credentials from https://app.brevo.com');
       }
-    }
 
-    // No SMTP configured, try Resend
-    if (resendClient) {
-      console.log('📧 SMTP not configured, using Resend API...');
-      return await this.sendViaResend(email, subject, htmlContent, textContent);
-    }
+      if (error.code === 'EAUTH') {
+        throw new Error('SMTP authentication failed. Please verify EMAIL_USER and EMAIL_PASS are correct. For Gmail, use an App Password. For Brevo, use your SMTP key.');
+      }
 
-    // Neither SMTP nor Resend configured
-    throw new Error('No email service configured. Please set either EMAIL_USER/EMAIL_PASS (Gmail SMTP) or RESEND_API_KEY (Resend API) in environment variables.');
+      if (error.code === 'ECONNECTION' || error.code === 'ENOTFOUND') {
+        throw new Error('Cannot connect to SMTP server. Please check EMAIL_HOST and EMAIL_PORT settings, or verify your internet connection.');
+      }
+
+      throw new Error(`Failed to send email: ${error.message}. Code: ${error.code || 'unknown'}`);
+    }
   }
 
   // Manual trigger for testing push notifications (no email)
