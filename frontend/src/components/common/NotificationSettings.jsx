@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, BellOff, Mail, TestTube, AlertCircle, RefreshCw } from 'lucide-react';
 import pushNotificationService from '../../services/pushNotificationService';
+import api from '../../services/api';
 
 const NotificationSettings = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -26,8 +27,7 @@ const NotificationSettings = () => {
 
   const loadSubscriptions = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/notifications/subscriptions');
-      const data = await response.json();
+      const data = await api.get('/notifications/subscriptions');
       setSubscriptions(data.subscriptions || []);
     } catch (error) {
       console.error('Error loading subscriptions:', error);
@@ -131,7 +131,9 @@ const NotificationSettings = () => {
 
     try {
       const subscribed = await pushNotificationService.isSubscribed();
-      if (!subscribed) {
+
+      // Check if we have any subscriptions at all (email or push)
+      if (!subscribed && subscriptions.length === 0) {
         setMessage('⚠️ Please subscribe first before sending test notifications');
         addDebugLog('⚠️ Not subscribed');
         setLoading(false);
@@ -144,27 +146,35 @@ const NotificationSettings = () => {
         testEmail = subscriptions[0].userEmail;
       }
 
-      // Test browser notification directly first
-      addDebugLog('🔔 Testing browser notification API directly...');
-      if ('Notification' in window && Notification.permission === 'granted') {
-        try {
-          const testNotif = new Notification('🧪 Direct Browser Test', {
-            body: 'This is a direct browser notification test',
-            tag: 'direct-test',
-            requireInteraction: false
-          });
-          addDebugLog('✅ Direct browser notification created successfully');
-          setTimeout(() => testNotif.close(), 5000);
-        } catch (directError) {
-          addDebugLog(`❌ Direct notification failed: ${directError.message}`);
+      // Test browser notification only if subscribed
+      if (subscribed) {
+        addDebugLog('🔔 Testing browser notification API directly...');
+        if ('Notification' in window && Notification.permission === 'granted') {
+          try {
+            const testNotif = new Notification('🧪 Direct Browser Test', {
+              body: 'This is a direct browser notification test',
+              tag: 'direct-test',
+              requireInteraction: false
+            });
+            addDebugLog('✅ Direct browser notification created successfully');
+            setTimeout(() => testNotif.close(), 5000);
+          } catch (directError) {
+            addDebugLog(`❌ Direct notification failed: ${directError.message}`);
+          }
         }
-      }
 
-      // Send browser push notification
-      addDebugLog('📱 Sending browser push notification...');
-      await pushNotificationService.sendTestNotification();
-      addDebugLog('✅ Test push notification sent to server');
-      addDebugLog('👀 Check Windows notification center (bottom right corner)');
+        // Send browser push notification
+        addDebugLog('📱 Sending browser push notification...');
+        try {
+          await pushNotificationService.sendTestNotification();
+          addDebugLog('✅ Test push notification sent to server');
+          addDebugLog('👀 Check Windows notification center (bottom right corner)');
+        } catch (pushError) {
+          addDebugLog(`⚠️ Push notification failed: ${pushError.message}`);
+        }
+      } else {
+        addDebugLog('ℹ️ No push subscription - skipping browser notification');
+      }
 
       // Send email notification if email is available
       if (testEmail) {
@@ -199,15 +209,7 @@ const NotificationSettings = () => {
     setMessage('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/notifications/unsubscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint: subscription.endpoint })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || 'Failed to remove subscription');
+      await api.post('/notifications/unsubscribe', { endpoint: subscription.endpoint });
 
       setMessage('✅ Successfully removed subscription');
       await loadSubscriptions();
@@ -340,7 +342,7 @@ const NotificationSettings = () => {
 
             <button
               onClick={handleTestNotification}
-              disabled={loading || !isSubscribed}
+              disabled={loading || (subscriptions.length === 0 && !isSubscribed)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               <TestTube size={18} />
