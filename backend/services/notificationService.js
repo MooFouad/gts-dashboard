@@ -27,7 +27,17 @@ if (isEmailConfigured) {
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-      }
+      },
+      // Add connection pooling and timeouts
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 10,
+      rateDelta: 1000,
+      rateLimit: 5,
+      // Connection timeout settings
+      connectionTimeout: 30000, // 30 seconds
+      greetingTimeout: 20000,   // 20 seconds
+      socketTimeout: 45000      // 45 seconds
     });
 
     transporter.verify((error) => {
@@ -594,28 +604,42 @@ class NotificationService {
     };
 
     try {
-      // Add timeout wrapper to prevent hanging (50 seconds to be under frontend's 60s timeout)
-      const sendWithTimeout = (mailOptions, timeout = 50000) => {
+      // Add timeout wrapper to prevent hanging (30 seconds with fast fail)
+      const sendWithTimeout = (mailOptions, timeout = 30000) => {
         return Promise.race([
           transporter.sendMail(mailOptions),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Email sending timeout after 50 seconds')), timeout)
+            setTimeout(() => reject(new Error('Email sending timeout after 30 seconds')), timeout)
           )
         ]);
       };
 
       console.log('📧 Sending test email to:', email);
+      console.log('   Using SMTP:', process.env.EMAIL_SERVICE, 'with user:', process.env.EMAIL_USER);
+
+      const startTime = Date.now();
       const info = await sendWithTimeout(mailOptions);
-      console.log('✅ Test email sent successfully:', info.messageId);
+      const duration = Date.now() - startTime;
+
+      console.log(`✅ Test email sent successfully in ${duration}ms`);
+      console.log('   Message ID:', info.messageId);
       console.log('   To:', email);
       console.log('   App URL:', appUrl);
-      return { success: true, message: 'Test email sent successfully', messageId: info.messageId };
+      return { success: true, message: 'Test email sent successfully', messageId: info.messageId, duration };
     } catch (error) {
       console.error('❌ Failed to send test email:', error);
 
       // Provide more helpful error messages
-      if (error.message.includes('timeout')) {
-        throw new Error('Email sending timed out. This usually means Gmail servers are slow or unreachable. Please try again in a few moments.');
+      if (error.message.includes('timeout') || error.code === 'ETIMEDOUT' || error.code === 'ESOCKET') {
+        throw new Error('Email sending timed out. Gmail servers may be slow or unreachable. Check your internet connection and try again.');
+      }
+
+      if (error.code === 'EAUTH') {
+        throw new Error('Email authentication failed. Please verify EMAIL_USER and EMAIL_PASS are correct.');
+      }
+
+      if (error.code === 'ECONNECTION') {
+        throw new Error('Cannot connect to Gmail SMTP server. Check your internet connection.');
       }
 
       throw new Error(`Failed to send email: ${error.message}`);
