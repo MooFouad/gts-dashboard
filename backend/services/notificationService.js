@@ -514,17 +514,95 @@ class NotificationService {
 
   // Manual trigger for testing (email only)
   async sendTestNotification(email) {
-    const testNotification = {
-      title: '🧪 Test Email Notification',
-      message: 'This is a test email notification from GTS Dashboard',
-      type: 'test',
-      subType: 'test',
-      daysUntil: 10
+    const appUrl = process.env.APP_URL || 'https://gts-fullstack.vercel.app';
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; }
+          .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; }
+          .header h1 { margin: 0; font-size: 28px; }
+          .content { padding: 30px; }
+          .test-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-size: 14px; margin: 10px 0; }
+          .info-box { background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          .button { display: inline-block; background: #3b82f6; color: white !important; padding: 14px 32px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; transition: all 0.3s; }
+          .button:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+          .footer { background: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 13px; border-top: 1px solid #e5e7eb; }
+          .checkmark { font-size: 48px; color: #10b981; text-align: center; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎯 GTS Dashboard</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Test Notification System</p>
+          </div>
+          <div class="content">
+            <div class="checkmark">✅</div>
+            <h2 style="text-align: center; color: #1f2937;">Email Notification Test Successful!</h2>
+
+            <span class="test-badge">🧪 TEST MODE</span>
+
+            <div class="info-box">
+              <p style="margin: 0;"><strong>📬 Great news!</strong></p>
+              <p style="margin: 10px 0 0 0;">Your email notification system is configured correctly and working perfectly. You will receive daily notifications about:</p>
+              <ul style="margin: 10px 0;">
+                <li>🚗 Vehicle licenses, inspections & insurance expiring soon</li>
+                <li>🏠 Home rental contracts ending</li>
+                <li>⚡ Electricity bills due for payment</li>
+              </ul>
+            </div>
+
+            <p style="text-align: center; margin: 30px 0;">
+              <a href="${appUrl}" class="button">
+                🚀 Open GTS Dashboard
+              </a>
+            </p>
+
+            <p style="text-align: center; color: #6b7280; font-size: 14px;">
+              Dashboard URL: <a href="${appUrl}" style="color: #3b82f6;">${appUrl}</a>
+            </p>
+
+            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <strong>⏰ Notification Schedule:</strong><br>
+              Daily automatic checks at 9:00 AM, starting 10 days before expiration dates.
+            </div>
+          </div>
+          <div class="footer">
+            <p><strong>GTS Dashboard - German Technical Services Co.</strong></p>
+            <p>This is an automated test email from your notification system</p>
+            <p style="color: #9ca3af; margin-top: 10px;">Do not reply to this email</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (!transporter) {
+      throw new Error('Email service is not configured. Please check EMAIL_USER and EMAIL_PASS environment variables.');
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'GTS Dashboard <noreply@gts-dashboard.com>',
+      to: email,
+      subject: '🧪 Test Email - GTS Dashboard Notification System',
+      html: htmlContent,
+      text: `Test Email Notification\n\nThis is a test email from GTS Dashboard.\n\nYour notification system is working correctly!\n\nDashboard: ${appUrl}`
     };
 
-    await this.sendEmailNotification(testNotification, [email]);
-
-    return { success: true, message: 'Test email sent' };
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('✅ Test email sent successfully:', info.messageId);
+      console.log('   To:', email);
+      console.log('   App URL:', appUrl);
+      return { success: true, message: 'Test email sent successfully', messageId: info.messageId };
+    } catch (error) {
+      console.error('❌ Failed to send test email:', error);
+      throw new Error(`Failed to send email: ${error.message}`);
+    }
   }
 
   // Manual trigger for testing push notifications (no email)
