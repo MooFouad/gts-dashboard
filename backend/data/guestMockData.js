@@ -52,7 +52,7 @@ const mockVehicles = [
     inspectionExpiryDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days from now
     insuranceExpiryDate: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(), // 120 days from now
     createdAt: new Date('2024-03-10'),
-    updatedAt: new Date()
+    updatedAt: new Date(),
     color: 'Black',
     licenseExpiryDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
     inspectionExpiryDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
@@ -227,7 +227,6 @@ const mockVehicles = [
     insuranceExpiryDate: new Date(Date.now() + 102 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date('2024-03-20'),
     updatedAt: new Date()
->>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
   }
 ];
 
@@ -412,7 +411,6 @@ const mockHomeRents = [
     paymentDay: 1,
     createdAt: new Date('2024-02-10'),
     updatedAt: new Date()
->>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
   }
 ];
 
@@ -585,7 +583,6 @@ const mockElectricity = [
     isPaid: true,
     createdAt: new Date('2024-09-04'),
     updatedAt: new Date()
->>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
   }
 ];
 
