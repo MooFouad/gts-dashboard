@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Vehicle = require('../models/Vehicle');
 const { AppError } = require('../middleware/errorHandler');
+const { blockGuestWrites } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const {
   createVehicleValidator,
@@ -9,6 +10,9 @@ const {
   deleteVehicleValidator
 } = require('../validators/vehicleValidator');
 const guestSessionStore = require('../services/guestSessionStore');
+
+// Block guest users from write operations (POST, PUT, DELETE)
+router.use(blockGuestWrites);
 
 // GET all vehicles
 router.get('/', async (req, res, next) => {
