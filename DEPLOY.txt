@@ -1,0 +1,124 @@
+===========================================
+GTS Dashboard - دليل النشر السريع
+===========================================
+
+ملخص:
+- Frontend: Vercel (مجاني)
+- Backend: Render (مجاني)
+- Database: MongoDB Atlas (موجود)
+
+===========================================
+1. نشر Backend على Render
+===========================================
+
+الخطوات:
+1. افتح https://render.com وسجل دخول/إنشاء حساب
+2. اضغط "New" → "Web Service"
+3. اربط GitHub repository الخاص بك
+4. الإعدادات:
+   - Name: gts-dashboard-api
+   - Region: Frankfurt
+   - Root Directory: backend
+   - Environment: Node
+   - Build Command: npm install
+   - Start Command: npm start
+
+5. أضف Environment Variables (من backend/.env.example):
+   - انسخ كل القيم من ملف .env الحالي
+   - أهم متغير: ALLOWED_ORIGINS (سنحدثه بعد نشر Frontend)
+
+6. اضغط "Create Web Service"
+7. انتظر حتى ينتهي Deploy
+8. انسخ الـ URL (مثل: https://gts-dashboard-api.onrender.com)
+
+===========================================
+2. نشر Frontend على Vercel
+===========================================
+
+الخطوات:
+1. افتح https://vercel.com وسجل دخول/إنشاء حساب
+2. اضغط "Add New" → "Project"
+3. اختر GitHub repository
+4. الإعدادات:
+   - Framework Preset: Vite
+   - Root Directory: frontend
+   - Build Command: npm run build
+   - Output Directory: dist
+
+5. أضف Environment Variable واحد فقط:
+   - Name: VITE_API_URL
+   - Value: https://gts-dashboard-api.onrender.com/api
+   (استخدم الـ URL من Render + /api)
+
+6. اضغط "Deploy"
+7. انتظر حتى ينتهي Deploy
+8. انسخ الـ URL (مثل: https://gts-dashboard.vercel.app)
+
+===========================================
+3. تحديث CORS في Backend
+===========================================
+
+1. ارجع لـ Render Dashboard
+2. اختر الـ Web Service (gts-dashboard-api)
+3. اذهب إلى "Environment"
+4. عدّل ALLOWED_ORIGINS:
+   - القيمة الجديدة: https://gts-dashboard.vercel.app
+   (استخدم الـ URL من Vercel)
+5. احفظ التغييرات
+6. Backend سيعمل redeploy تلقائياً
+
+===========================================
+4. اختبار التطبيق
+===========================================
+
+1. افتح Frontend URL في المتصفح
+2. سجل دخول بحسابك
+3. جرّب الصفحات المختلفة:
+   - Vehicles
+   - Home Rents
+   - Electricity
+   - Settings
+
+===========================================
+النتيجة النهائية
+===========================================
+
+Frontend (للمدير):
+https://gts-dashboard.vercel.app
+
+Backend API:
+https://gts-dashboard-api.onrender.com
+
+Database:
+MongoDB Atlas (موجود مسبقاً)
+
+===========================================
+ملاحظات مهمة
+===========================================
+
+1. الـ Free tier على Render:
+   - Backend قد يصبح غير نشط بعد 15 دقيقة
+   - أول request بعد عدم النشاط قد يأخذ 30-60 ثانية
+
+2. للتحديثات المستقبلية:
+   - Push التغييرات لـ GitHub
+   - Render و Vercel سيعملان deploy تلقائياً
+
+3. Environment Variables:
+   - لا تضع credentials في الكود
+   - استخدم Environment Variables دائماً
+
+4. زرار Sync with Absher تم إخفاؤه
+   - لأنه غير شغال حالياً
+   - المدير سيرى فقط الوظائف الشغالة
+
+===========================================
+دعم
+===========================================
+
+إذا واجهت مشاكل:
+- Render Logs: Dashboard → Logs
+- Vercel Logs: Project → Deployments → View Logs
+- MongoDB Atlas: https://cloud.mongodb.com
+
+===========================================
