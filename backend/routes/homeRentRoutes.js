@@ -8,10 +8,22 @@ const {
   updateHomeRentValidator,
   deleteHomeRentValidator
 } = require('../validators/homeRentValidator');
+const { mockHomeRents } = require('../data/guestMockData');
 
 // GET all home rents
 router.get('/', async (req, res, next) => {
   try {
+    // Return mock data for guest users
+    if (req.user && req.user.isGuest) {
+      return res.json({
+        success: true,
+        count: mockHomeRents.length,
+        data: mockHomeRents,
+        isDemo: true
+      });
+    }
+
+    // Real user - fetch from database
     const homeRents = await HomeRent.find({}).lean();
     res.json({
       success: true,

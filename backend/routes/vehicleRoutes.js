@@ -8,10 +8,32 @@ const {
   updateVehicleValidator,
   deleteVehicleValidator
 } = require('../validators/vehicleValidator');
+const { mockVehicles } = require('../data/guestMockData');
 
 // GET all vehicles
 router.get('/', async (req, res, next) => {
   try {
+    // Return mock data for guest users
+    if (req.user && req.user.isGuest) {
+      const formattedVehicles = mockVehicles.map(vehicle => ({
+        ...vehicle,
+        licenseExpiryDate: vehicle.licenseExpiryDate ?
+          new Date(vehicle.licenseExpiryDate).toISOString().split('T')[0] : null,
+        inspectionExpiryDate: vehicle.inspectionExpiryDate ?
+          new Date(vehicle.inspectionExpiryDate).toISOString().split('T')[0] : null,
+        istemarahIssueDate: vehicle.istemarahIssueDate ?
+          new Date(vehicle.istemarahIssueDate).toISOString().split('T')[0] : null,
+      }));
+
+      return res.json({
+        success: true,
+        count: formattedVehicles.length,
+        data: formattedVehicles,
+        isDemo: true
+      });
+    }
+
+    // Real user - fetch from database
     const vehicles = await Vehicle.find({})
       .lean()
       .maxTimeMS(5000)

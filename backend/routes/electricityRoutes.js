@@ -8,10 +8,22 @@ const {
   updateElectricityValidator,
   deleteElectricityValidator
 } = require('../validators/electricityValidator');
+const { mockElectricity } = require('../data/guestMockData');
 
 // GET all electricity bills
 router.get('/', async (req, res, next) => {
   try {
+    // Return mock data for guest users
+    if (req.user && req.user.isGuest) {
+      return res.json({
+        success: true,
+        count: mockElectricity.length,
+        data: mockElectricity,
+        isDemo: true
+      });
+    }
+
+    // Real user - fetch from database
     const bills = await Electricity.find({}).sort({ createdAt: 1 });
     res.json({
       success: true,
