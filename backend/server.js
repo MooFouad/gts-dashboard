@@ -154,10 +154,10 @@ app.post('/api/notifications/test-push', notificationRoutes);
 app.get('/api/notifications/subscriptions', notificationRoutes);
 
 // Protected routes (authentication required)
-// Guests can view but cannot modify data (blockGuestWrites middleware)
-app.use('/api/vehicles', authenticate, blockGuestWrites, require('./routes/vehicleRoutes'));
-app.use('/api/home-rents', authenticate, blockGuestWrites, require('./routes/homeRentRoutes'));
-app.use('/api/electricity', authenticate, blockGuestWrites, require('./routes/electricityRoutes'));
+// Guests use in-memory session store (no database access)
+app.use('/api/vehicles', authenticate, require('./routes/vehicleRoutes'));
+app.use('/api/home-rents', authenticate, require('./routes/homeRentRoutes'));
+app.use('/api/electricity', authenticate, require('./routes/electricityRoutes'));
 app.use('/api/notifications', authenticate, notificationRoutes);
 app.use('/api/import', authenticate, authorize('admin', 'user'), require('./routes/importRoutes'));
 app.use('/api/absher', authenticate, require('./routes/absherRoutes'));
