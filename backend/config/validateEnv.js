@@ -6,7 +6,7 @@ const requiredEnvVars = [
   'VAPID_EMAIL',
   'EMAIL_USER',
   'EMAIL_PASS',
-  'EMAIL_SERVICE',
+  // EMAIL_SERVICE is optional - only needed for Gmail, not for custom SMTP
   'APP_URL'
 ];
 

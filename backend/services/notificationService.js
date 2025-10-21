@@ -24,11 +24,10 @@ if (isEmailConfigured) {
     console.log('   User:', process.env.EMAIL_USER);
     console.log('   Pass configured:', process.env.EMAIL_PASS ? 'Yes' : 'No');
 
-    transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE,
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : undefined,
-      secure: process.env.EMAIL_SECURE ? process.env.EMAIL_SECURE === 'true' : undefined,
+    // Build transporter config
+    // For Gmail, use the 'service' shorthand
+    // For Brevo/custom SMTP, use host/port/secure
+    const transportConfig = {
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
@@ -44,7 +43,25 @@ if (isEmailConfigured) {
       socketTimeout: 45000,
       debug: process.env.NODE_ENV === 'development',
       logger: process.env.NODE_ENV === 'development'
-    });
+    };
+
+    // If EMAIL_HOST is provided, use custom SMTP (Brevo, etc.)
+    if (process.env.EMAIL_HOST) {
+      console.log('   Host:', process.env.EMAIL_HOST);
+      console.log('   Port:', process.env.EMAIL_PORT || 'default');
+      console.log('   Secure:', process.env.EMAIL_SECURE || 'default');
+
+      transportConfig.host = process.env.EMAIL_HOST;
+      transportConfig.port = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : 587;
+      transportConfig.secure = process.env.EMAIL_SECURE === 'true';
+    } else if (process.env.EMAIL_SERVICE === 'gmail') {
+      // Use Gmail's built-in service config
+      transportConfig.service = 'gmail';
+    } else {
+      console.error('⚠️  No EMAIL_HOST or valid EMAIL_SERVICE provided');
+    }
+
+    transporter = nodemailer.createTransport(transportConfig);
 
     transporter.verify((error) => {
       if (error) {

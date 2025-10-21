@@ -18,7 +18,7 @@ validateEnv();
 const { errorHandler, handleUnhandledRejection, handleUncaughtException } = require('./middleware/errorHandler');
 
 // Authentication middleware
-const { authenticate, authorize } = require('./middleware/auth');
+const { authenticate, authorize, blockGuestWrites } = require('./middleware/auth');
 
 // Notification scheduler
 const notificationScheduler = require('./services/notificationScheduler');
@@ -154,7 +154,7 @@ app.post('/api/notifications/test-push', notificationRoutes);
 app.get('/api/notifications/subscriptions', notificationRoutes);
 
 // Protected routes (authentication required)
-// You can add role-based authorization like: authenticate, authorize('admin', 'user')
+// Guests use in-memory session store (no database access)
 app.use('/api/vehicles', authenticate, require('./routes/vehicleRoutes'));
 app.use('/api/home-rents', authenticate, require('./routes/homeRentRoutes'));
 app.use('/api/electricity', authenticate, require('./routes/electricityRoutes'));

@@ -28,6 +28,12 @@ services:
         sync: false
       - key: EMAIL_SERVICE
         value: gmail
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        sync: false
+      - key: EMAIL_SECURE
+        sync: false
       - key: EMAIL_USER
         sync: false
       - key: EMAIL_PASS
