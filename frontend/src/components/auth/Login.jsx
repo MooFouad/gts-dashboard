@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Lock, Mail, AlertCircle, Loader } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Loader, UserCircle } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [guestLoading, setGuestLoading] = useState(false);
+  const { login, loginAsGuest } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,7 +17,7 @@ const Login = () => {
 
     try {
       const result = await login(email, password);
-      
+
       if (!result.success) {
         setError(result.error);
       }
@@ -24,6 +25,23 @@ const Login = () => {
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setError('');
+    setGuestLoading(true);
+
+    try {
+      const result = await loginAsGuest();
+
+      if (!result.success) {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setGuestLoading(false);
     }
   };
 
@@ -94,7 +112,7 @@ const Login = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || guestLoading}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
           >
             {loading ? (
@@ -108,9 +126,40 @@ const Login = () => {
           </button>
         </form>
 
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Or</span>
+          </div>
+        </div>
+
+        {/* Guest/Demo Mode Button */}
+        <button
+          type="button"
+          onClick={handleGuestLogin}
+          disabled={loading || guestLoading}
+          className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition border border-gray-300"
+        >
+          {guestLoading ? (
+            <>
+              <Loader className="animate-spin" size={20} />
+              Loading demo...
+            </>
+          ) : (
+            <>
+              <UserCircle size={20} />
+              Continue as Guest (Demo Mode)
+            </>
+          )}
+        </button>
+
         {/* Additional Info */}
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>Contact your administrator for access credentials</p>
+          <p className="mt-2 text-xs text-gray-500">Guest mode uses demo data and has limited permissions</p>
         </div>
       </div>
     </div>

@@ -18,7 +18,7 @@ validateEnv();
 const { errorHandler, handleUnhandledRejection, handleUncaughtException } = require('./middleware/errorHandler');
 
 // Authentication middleware
-const { authenticate, authorize } = require('./middleware/auth');
+const { authenticate, authorize, blockGuestWrites } = require('./middleware/auth');
 
 // Notification scheduler
 const notificationScheduler = require('./services/notificationScheduler');
@@ -154,10 +154,10 @@ app.post('/api/notifications/test-push', notificationRoutes);
 app.get('/api/notifications/subscriptions', notificationRoutes);
 
 // Protected routes (authentication required)
-// You can add role-based authorization like: authenticate, authorize('admin', 'user')
-app.use('/api/vehicles', authenticate, require('./routes/vehicleRoutes'));
-app.use('/api/home-rents', authenticate, require('./routes/homeRentRoutes'));
-app.use('/api/electricity', authenticate, require('./routes/electricityRoutes'));
+// Guests can view but cannot modify data (blockGuestWrites middleware)
+app.use('/api/vehicles', authenticate, blockGuestWrites, require('./routes/vehicleRoutes'));
+app.use('/api/home-rents', authenticate, blockGuestWrites, require('./routes/homeRentRoutes'));
+app.use('/api/electricity', authenticate, blockGuestWrites, require('./routes/electricityRoutes'));
 app.use('/api/notifications', authenticate, notificationRoutes);
 app.use('/api/import', authenticate, authorize('admin', 'user'), require('./routes/importRoutes'));
 app.use('/api/absher', authenticate, require('./routes/absherRoutes'));
