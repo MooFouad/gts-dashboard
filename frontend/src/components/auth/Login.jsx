@@ -137,7 +137,7 @@ const Login = () => {
         </div>
 
         {/* Guest/Demo Mode Button */}
-        <button
+        {/* <button
           type="button"
           onClick={handleGuestLogin}
           disabled={loading || guestLoading}
@@ -154,7 +154,7 @@ const Login = () => {
               Continue as Guest (Demo Mode)
             </>
           )}
-        </button>
+        </button> */}
 
         {/* Additional Info */}
         <div className="mt-6 text-center text-sm text-gray-600">
