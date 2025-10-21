@@ -13,15 +13,24 @@ class GuestSessionStore {
   }
 
   // Initialize a new guest session with mock data
+  // In production: empty arrays (0 items)
+  // In development: full mock data (15 items each)
   initSession(userId) {
     if (!this.sessions.has(userId)) {
+      const isProduction = process.env.NODE_ENV === 'production';
+
       this.sessions.set(userId, {
-        vehicles: JSON.parse(JSON.stringify(mockVehicles)), // Deep copy
-        homeRents: JSON.parse(JSON.stringify(mockHomeRents)),
-        electricity: JSON.parse(JSON.stringify(mockElectricity)),
+        vehicles: isProduction ? [] : JSON.parse(JSON.stringify(mockVehicles)),
+        homeRents: isProduction ? [] : JSON.parse(JSON.stringify(mockHomeRents)),
+        electricity: isProduction ? [] : JSON.parse(JSON.stringify(mockElectricity)),
         createdAt: new Date()
       });
-      console.log(`✨ Created new guest session: ${userId}`);
+
+      if (isProduction) {
+        console.log(`✨ Created new guest session (PRODUCTION - empty data): ${userId}`);
+      } else {
+        console.log(`✨ Created new guest session (DEVELOPMENT - with mock data): ${userId}`);
+      }
     }
     return this.sessions.get(userId);
   }

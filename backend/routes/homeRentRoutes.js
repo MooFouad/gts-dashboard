@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const HomeRent = require('../models/HomeRent');
 const { AppError } = require('../middleware/errorHandler');
+const { blockGuestWrites } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const {
   createHomeRentValidator,
@@ -9,6 +10,9 @@ const {
   deleteHomeRentValidator
 } = require('../validators/homeRentValidator');
 const guestSessionStore = require('../services/guestSessionStore');
+
+// Block guest users from write operations (POST, PUT, DELETE)
+router.use(blockGuestWrites);
 
 // GET all home rents
 router.get('/', async (req, res, next) => {
