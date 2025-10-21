@@ -1,12 +1,10 @@
-<<<<<<< HEAD
+
 // Mock data for guest/demo users
 // This data is shown to guests instead of real database data
-=======
 // Mock data for guest/demo users (LOCAL DEVELOPMENT ONLY)
 // This data is shown to guests in development mode
 // In production, guests see empty data (0 items)
 // 15 realistic Saudi items for each category
->>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
 
 const mockVehicles = [
   {
@@ -16,16 +14,13 @@ const mockVehicles = [
     make: 'Toyota',
     model: 'Camry',
     year: 2022,
-<<<<<<< HEAD
     licenseExpiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
     inspectionExpiryDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now
     insuranceExpiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-=======
     color: 'White',
     licenseExpiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
     inspectionExpiryDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
     insuranceExpiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
->>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date()
   },
@@ -36,16 +31,13 @@ const mockVehicles = [
     make: 'Hyundai',
     model: 'Sonata',
     year: 2021,
-<<<<<<< HEAD
     licenseExpiryDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago (expired)
     inspectionExpiryDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(), // 45 days from now
     insuranceExpiryDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days from now
-=======
     color: 'Silver',
     licenseExpiryDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     inspectionExpiryDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
     insuranceExpiryDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
->>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
     createdAt: new Date('2024-02-15'),
     updatedAt: new Date()
   },
@@ -56,13 +48,11 @@ const mockVehicles = [
     make: 'GMC',
     model: 'Yukon',
     year: 2023,
-<<<<<<< HEAD
     licenseExpiryDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(), // 8 days from now
     inspectionExpiryDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days from now
     insuranceExpiryDate: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(), // 120 days from now
     createdAt: new Date('2024-03-10'),
     updatedAt: new Date()
-=======
     color: 'Black',
     licenseExpiryDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
     inspectionExpiryDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
@@ -249,11 +239,8 @@ const mockHomeRents = [
     landlordPhone: '+966-50-123-4567',
     monthlyRent: 5000,
     contractStartDate: new Date('2024-01-01').toISOString(),
-<<<<<<< HEAD
     contractEndDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(), // 25 days from now
-=======
     contractEndDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
->>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
     paymentDay: 1,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date()
@@ -269,8 +256,6 @@ const mockHomeRents = [
     paymentDay: 5,
     createdAt: new Date('2023-06-01'),
     updatedAt: new Date()
-<<<<<<< HEAD
-=======
   },
   {
     _id: 'mock-rent-3',
@@ -437,11 +422,9 @@ const mockElectricity = [
     propertyAddress: 'شارع الملك فهد، الرياض',
     accountNumber: 'ELEC-2024-001',
     meterNumber: 'MTR-12345',
-<<<<<<< HEAD
     billDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-=======
+
     billDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
->>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
     billAmount: 450,
     isPaid: false,
     createdAt: new Date('2024-09-01'),
@@ -463,17 +446,13 @@ const mockElectricity = [
     propertyAddress: 'شارع التحلية، جدة',
     accountNumber: 'ELEC-2024-003',
     meterNumber: 'MTR-11223',
-<<<<<<< HEAD
     billDueDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago (overdue)
-=======
+
     billDueDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
->>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
     billAmount: 520,
     isPaid: false,
     createdAt: new Date('2024-08-25'),
     updatedAt: new Date()
-<<<<<<< HEAD
-=======
   },
   {
     _id: 'mock-elec-4',
