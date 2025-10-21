@@ -6,9 +6,12 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import Toolbar from '../layout/Toolbar';
 import ExportButton from '../common/ExportButton';
 import { useDataManagement } from '../../hooks/useDataManagement';
+import { useAuth } from '../../contexts/AuthContext';
 import { exportElectricityToExcel } from '../../utils/excelUtils';
 
 const ElectricityContainer = () => {
+  const { user } = useAuth();
+  const isGuest = user?.role === 'guest';
   const [formDialog, setFormDialog] = useState({ isOpen: false, data: null });
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
   const [searchTerm, setSearchTerm] = useState('');
@@ -134,16 +137,19 @@ const ElectricityContainer = () => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-        <h2 className="text-xl font-semibold">Electricity Bills</h2>
+        <h2 className="text-xl font-semibold">
+          Electricity Bills {isGuest && <span className="text-sm text-gray-500 font-normal">(Demo Mode - Read Only)</span>}
+        </h2>
         <div className="flex flex-wrap gap-2">
-          {/* <ExportButton onClick={handleExport} label="Export Electricity Bills" /> */}
           <ExportButton onClick={handleExport} label="Export Electricity Bills" />
-          <button
-            onClick={handleCreate}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Add Electricity Bill
-          </button>
+          {!isGuest && (
+            <button
+              onClick={handleCreate}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Add Electricity Bill
+            </button>
+          )}
         </div>
       </div>
 
@@ -157,8 +163,8 @@ const ElectricityContainer = () => {
 
       <ElectricityTable
         data={filteredItems}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={!isGuest ? handleEdit : null}
+        onDelete={!isGuest ? handleDelete : null}
       />
 
       <FormDialog

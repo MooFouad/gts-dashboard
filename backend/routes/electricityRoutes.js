@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Electricity = require('../models/Electricity');
 const { AppError } = require('../middleware/errorHandler');
+const { blockGuestWrites } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const {
   createElectricityValidator,
@@ -9,6 +10,9 @@ const {
   deleteElectricityValidator
 } = require('../validators/electricityValidator');
 const guestSessionStore = require('../services/guestSessionStore');
+
+// Block guest users from write operations (POST, PUT, DELETE)
+router.use(blockGuestWrites);
 
 // GET all electricity bills
 router.get('/', async (req, res, next) => {

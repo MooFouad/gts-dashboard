@@ -1,62 +1,267 @@
+<<<<<<< HEAD
 // Mock data for guest/demo users
 // This data is shown to guests instead of real database data
+=======
+// Mock data for guest/demo users (LOCAL DEVELOPMENT ONLY)
+// This data is shown to guests in development mode
+// In production, guests see empty data (0 items)
+// 15 realistic Saudi items for each category
+>>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
 
 const mockVehicles = [
   {
     _id: 'mock-vehicle-1',
-    plateNumber: 'ABC-123',
+    plateNumber: 'أ ب ج - 1234',
+    sequenceNumber: '12345678',
     make: 'Toyota',
     model: 'Camry',
     year: 2022,
+<<<<<<< HEAD
     licenseExpiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
     inspectionExpiryDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now
     insuranceExpiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+=======
+    color: 'White',
+    licenseExpiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+>>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date()
   },
   {
     _id: 'mock-vehicle-2',
-    plateNumber: 'XYZ-789',
-    make: 'Honda',
-    model: 'Accord',
+    plateNumber: 'د هـ و - 5678',
+    sequenceNumber: '87654321',
+    make: 'Hyundai',
+    model: 'Sonata',
     year: 2021,
+<<<<<<< HEAD
     licenseExpiryDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago (expired)
     inspectionExpiryDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(), // 45 days from now
     insuranceExpiryDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days from now
+=======
+    color: 'Silver',
+    licenseExpiryDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+>>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
     createdAt: new Date('2024-02-15'),
     updatedAt: new Date()
   },
   {
     _id: 'mock-vehicle-3',
-    plateNumber: 'DEF-456',
-    make: 'Mercedes-Benz',
-    model: 'E-Class',
+    plateNumber: 'ز ح ط - 9012',
+    sequenceNumber: '11223344',
+    make: 'GMC',
+    model: 'Yukon',
     year: 2023,
+<<<<<<< HEAD
     licenseExpiryDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(), // 8 days from now
     inspectionExpiryDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days from now
     insuranceExpiryDate: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(), // 120 days from now
     createdAt: new Date('2024-03-10'),
     updatedAt: new Date()
+=======
+    color: 'Black',
+    licenseExpiryDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-03-10'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-4',
+    plateNumber: 'ي ك ل - 3456',
+    sequenceNumber: '55667788',
+    make: 'Nissan',
+    model: 'Patrol',
+    year: 2022,
+    color: 'White',
+    licenseExpiryDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-01-20'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-5',
+    plateNumber: 'م ن س - 7890',
+    sequenceNumber: '99887766',
+    make: 'Chevrolet',
+    model: 'Tahoe',
+    year: 2020,
+    color: 'Blue',
+    licenseExpiryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-02-05'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-6',
+    plateNumber: 'ع ف ص - 2468',
+    sequenceNumber: '44556677',
+    make: 'Toyota',
+    model: 'Land Cruiser',
+    year: 2023,
+    color: 'Pearl White',
+    licenseExpiryDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 100 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-03-01'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-7',
+    plateNumber: 'ق ر ش - 1357',
+    sequenceNumber: '22334455',
+    make: 'Lexus',
+    model: 'LX 570',
+    year: 2023,
+    color: 'Grey',
+    licenseExpiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 80 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 150 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-8',
+    plateNumber: 'ت ث خ - 9753',
+    sequenceNumber: '66778899',
+    make: 'Kia',
+    model: 'Sportage',
+    year: 2021,
+    color: 'Red',
+    licenseExpiryDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 55 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-02-20'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-9',
+    plateNumber: 'ذ ض ظ - 8642',
+    sequenceNumber: '33445566',
+    make: 'Ford',
+    model: 'Explorer',
+    year: 2022,
+    color: 'White',
+    licenseExpiryDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 65 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 110 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-03-05'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-10',
+    plateNumber: 'غ أ ؤ - 1598',
+    sequenceNumber: '77889900',
+    make: 'Mazda',
+    model: 'CX-9',
+    year: 2021,
+    color: 'Black',
+    licenseExpiryDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 85 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-01-25'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-11',
+    plateNumber: 'ء ئ ى - 7531',
+    sequenceNumber: '11998877',
+    make: 'Honda',
+    model: 'Accord',
+    year: 2022,
+    color: 'Silver',
+    licenseExpiryDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 55 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 95 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-02-10'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-12',
+    plateNumber: 'ة ى ي - 9514',
+    sequenceNumber: '22113344',
+    make: 'Mercedes-Benz',
+    model: 'GLE',
+    year: 2023,
+    color: 'White',
+    licenseExpiryDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 70 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 130 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-03-15'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-13',
+    plateNumber: 'أ ب ت - 3698',
+    sequenceNumber: '55443322',
+    make: 'BMW',
+    model: 'X5',
+    year: 2022,
+    color: 'Black',
+    licenseExpiryDate: new Date(Date.now() + 11 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 48 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 88 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-01-30'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-14',
+    plateNumber: 'ث ج ح - 7412',
+    sequenceNumber: '88776655',
+    make: 'Audi',
+    model: 'Q7',
+    year: 2021,
+    color: 'Grey',
+    licenseExpiryDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 68 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-02-25'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-vehicle-15',
+    plateNumber: 'خ د ذ - 8520',
+    sequenceNumber: '99665544',
+    make: 'Jeep',
+    model: 'Grand Cherokee',
+    year: 2023,
+    color: 'Blue',
+    licenseExpiryDate: new Date(Date.now() + 22 * 24 * 60 * 60 * 1000).toISOString(),
+    inspectionExpiryDate: new Date(Date.now() + 62 * 24 * 60 * 60 * 1000).toISOString(),
+    insuranceExpiryDate: new Date(Date.now() + 102 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date('2024-03-20'),
+    updatedAt: new Date()
+>>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
   }
 ];
 
 const mockHomeRents = [
   {
     _id: 'mock-rent-1',
-    propertyAddress: '123 King Street, Riyadh',
-    landlordName: 'Ahmed Al-Saud',
+    propertyAddress: 'شارع الملك فهد، الرياض',
+    landlordName: 'أحمد محمد السعيد',
     landlordPhone: '+966-50-123-4567',
     monthlyRent: 5000,
     contractStartDate: new Date('2024-01-01').toISOString(),
+<<<<<<< HEAD
     contractEndDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(), // 25 days from now
+=======
+    contractEndDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+>>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
     paymentDay: 1,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date()
   },
   {
     _id: 'mock-rent-2',
-    propertyAddress: '456 Prince Mohammed Bin Abdulaziz, Jeddah',
-    landlordName: 'Fatima Hassan',
+    propertyAddress: 'حي العليا، الرياض',
+    landlordName: 'فاطمة حسن',
     landlordPhone: '+966-55-987-6543',
     monthlyRent: 7500,
     contractStartDate: new Date('2023-06-01').toISOString(),
@@ -64,16 +269,179 @@ const mockHomeRents = [
     paymentDay: 5,
     createdAt: new Date('2023-06-01'),
     updatedAt: new Date()
+<<<<<<< HEAD
+=======
+  },
+  {
+    _id: 'mock-rent-3',
+    propertyAddress: 'شارع التحلية، جدة',
+    landlordName: 'عمر عبدالله',
+    landlordPhone: '+966-50-456-7890',
+    monthlyRent: 6000,
+    contractStartDate: new Date('2024-02-01').toISOString(),
+    contractEndDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 10,
+    createdAt: new Date('2024-02-01'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-4',
+    propertyAddress: 'حي الملقا، الرياض',
+    landlordName: 'سارة محمد',
+    landlordPhone: '+966-55-234-5678',
+    monthlyRent: 8000,
+    contractStartDate: new Date('2023-12-01').toISOString(),
+    contractEndDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 15,
+    createdAt: new Date('2023-12-01'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-5',
+    propertyAddress: 'الكورنيش، الدمام',
+    landlordName: 'خالد إبراهيم',
+    landlordPhone: '+966-50-789-0123',
+    monthlyRent: 5500,
+    contractStartDate: new Date('2024-03-01').toISOString(),
+    contractEndDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 1,
+    createdAt: new Date('2024-03-01'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-6',
+    propertyAddress: 'حي الياسمين، الرياض',
+    landlordName: 'ليلى أحمد',
+    landlordPhone: '+966-55-345-6789',
+    monthlyRent: 7000,
+    contractStartDate: new Date('2023-09-01').toISOString(),
+    contractEndDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 20,
+    createdAt: new Date('2023-09-01'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-7',
+    propertyAddress: 'الخبر، المنطقة الشرقية',
+    landlordName: 'حسن علي',
+    landlordPhone: '+966-50-567-8901',
+    monthlyRent: 6500,
+    contractStartDate: new Date('2024-01-15').toISOString(),
+    contractEndDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 5,
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-8',
+    propertyAddress: 'حي النرجس، الرياض',
+    landlordName: 'نورا خالد',
+    landlordPhone: '+966-55-678-9012',
+    monthlyRent: 5200,
+    contractStartDate: new Date('2023-11-01').toISOString(),
+    contractEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 10,
+    createdAt: new Date('2023-11-01'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-9',
+    propertyAddress: 'حي الورود، الرياض',
+    landlordName: 'عبدالله فهد',
+    landlordPhone: '+966-50-890-1234',
+    monthlyRent: 9000,
+    contractStartDate: new Date('2024-02-15').toISOString(),
+    contractEndDate: new Date(Date.now() + 150 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 1,
+    createdAt: new Date('2024-02-15'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-10',
+    propertyAddress: 'حي المروج، الرياض',
+    landlordName: 'مها سالم',
+    landlordPhone: '+966-55-901-2345',
+    monthlyRent: 6800,
+    contractStartDate: new Date('2023-10-01').toISOString(),
+    contractEndDate: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 25,
+    createdAt: new Date('2023-10-01'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-11',
+    propertyAddress: 'حي السليمانية، جدة',
+    landlordName: 'ماجد عبدالعزيز',
+    landlordPhone: '+966-50-112-2334',
+    monthlyRent: 8500,
+    contractStartDate: new Date('2024-01-20').toISOString(),
+    contractEndDate: new Date(Date.now() + 100 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 1,
+    createdAt: new Date('2024-01-20'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-12',
+    propertyAddress: 'حي الروضة، الرياض',
+    landlordName: 'هند محمد',
+    landlordPhone: '+966-55-223-3445',
+    monthlyRent: 4500,
+    contractStartDate: new Date('2023-08-01').toISOString(),
+    contractEndDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 15,
+    createdAt: new Date('2023-08-01'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-13',
+    propertyAddress: 'حي الفيصلية، جدة',
+    landlordName: 'طارق أحمد',
+    landlordPhone: '+966-50-334-4556',
+    monthlyRent: 7200,
+    contractStartDate: new Date('2024-03-05').toISOString(),
+    contractEndDate: new Date(Date.now() + 140 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 5,
+    createdAt: new Date('2024-03-05'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-14',
+    propertyAddress: 'حي الشفا، الرياض',
+    landlordName: 'ريم سعيد',
+    landlordPhone: '+966-55-445-5667',
+    monthlyRent: 5800,
+    contractStartDate: new Date('2023-07-01').toISOString(),
+    contractEndDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 10,
+    createdAt: new Date('2023-07-01'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-rent-15',
+    propertyAddress: 'حي العزيزية، الدمام',
+    landlordName: 'يوسف علي',
+    landlordPhone: '+966-50-556-6778',
+    monthlyRent: 6200,
+    contractStartDate: new Date('2024-02-10').toISOString(),
+    contractEndDate: new Date(Date.now() + 110 * 24 * 60 * 60 * 1000).toISOString(),
+    paymentDay: 1,
+    createdAt: new Date('2024-02-10'),
+    updatedAt: new Date()
+>>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
   }
 ];
 
 const mockElectricity = [
   {
     _id: 'mock-elec-1',
-    propertyAddress: '123 King Street, Riyadh',
+    propertyAddress: 'شارع الملك فهد، الرياض',
     accountNumber: 'ELEC-2024-001',
     meterNumber: 'MTR-12345',
+<<<<<<< HEAD
     billDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+=======
+    billDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+>>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
     billAmount: 450,
     isPaid: false,
     createdAt: new Date('2024-09-01'),
@@ -81,7 +449,7 @@ const mockElectricity = [
   },
   {
     _id: 'mock-elec-2',
-    propertyAddress: '456 Prince Mohammed Bin Abdulaziz, Jeddah',
+    propertyAddress: 'حي العليا، الرياض',
     accountNumber: 'ELEC-2024-002',
     meterNumber: 'MTR-67890',
     billDueDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(), // 20 days from now
@@ -92,14 +460,153 @@ const mockElectricity = [
   },
   {
     _id: 'mock-elec-3',
-    propertyAddress: '789 Tahlia Street, Riyadh',
+    propertyAddress: 'شارع التحلية، جدة',
     accountNumber: 'ELEC-2024-003',
     meterNumber: 'MTR-11223',
+<<<<<<< HEAD
     billDueDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago (overdue)
+=======
+    billDueDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+>>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
     billAmount: 520,
     isPaid: false,
     createdAt: new Date('2024-08-25'),
     updatedAt: new Date()
+<<<<<<< HEAD
+=======
+  },
+  {
+    _id: 'mock-elec-4',
+    propertyAddress: 'حي الملقا، الرياض',
+    accountNumber: 'ELEC-2024-004',
+    meterNumber: 'MTR-44556',
+    billDueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 390,
+    isPaid: false,
+    createdAt: new Date('2024-09-10'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-5',
+    propertyAddress: 'الكورنيش، الدمام',
+    accountNumber: 'ELEC-2024-005',
+    meterNumber: 'MTR-77889',
+    billDueDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 755,
+    isPaid: false,
+    createdAt: new Date('2024-08-20'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-6',
+    propertyAddress: 'حي الياسمين، الرياض',
+    accountNumber: 'ELEC-2024-006',
+    meterNumber: 'MTR-99001',
+    billDueDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 425,
+    isPaid: true,
+    createdAt: new Date('2024-09-01'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-7',
+    propertyAddress: 'الخبر، المنطقة الشرقية',
+    accountNumber: 'ELEC-2024-007',
+    meterNumber: 'MTR-22334',
+    billDueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 590,
+    isPaid: false,
+    createdAt: new Date('2024-09-08'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-8',
+    propertyAddress: 'حي النرجس، الرياض',
+    accountNumber: 'ELEC-2024-008',
+    meterNumber: 'MTR-55667',
+    billDueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 410,
+    isPaid: false,
+    createdAt: new Date('2024-09-12'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-9',
+    propertyAddress: 'حي الورود، الرياض',
+    accountNumber: 'ELEC-2024-009',
+    meterNumber: 'MTR-88990',
+    billDueDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 820,
+    isPaid: false,
+    createdAt: new Date('2024-08-10'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-10',
+    propertyAddress: 'حي المروج، الرياض',
+    accountNumber: 'ELEC-2024-010',
+    meterNumber: 'MTR-11224',
+    billDueDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 495,
+    isPaid: true,
+    createdAt: new Date('2024-09-03'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-11',
+    propertyAddress: 'حي السليمانية، جدة',
+    accountNumber: 'ELEC-2024-011',
+    meterNumber: 'MTR-33445',
+    billDueDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 540,
+    isPaid: false,
+    createdAt: new Date('2024-09-07'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-12',
+    propertyAddress: 'حي الروضة، الرياض',
+    accountNumber: 'ELEC-2024-012',
+    meterNumber: 'MTR-66778',
+    billDueDate: new Date(Date.now() + 22 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 380,
+    isPaid: false,
+    createdAt: new Date('2024-09-02'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-13',
+    propertyAddress: 'حي الفيصلية، جدة',
+    accountNumber: 'ELEC-2024-013',
+    meterNumber: 'MTR-99882',
+    billDueDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 615,
+    isPaid: false,
+    createdAt: new Date('2024-09-11'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-14',
+    propertyAddress: 'حي الشفا، الرياض',
+    accountNumber: 'ELEC-2024-014',
+    meterNumber: 'MTR-44771',
+    billDueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 470,
+    isPaid: false,
+    createdAt: new Date('2024-08-28'),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'mock-elec-15',
+    propertyAddress: 'حي العزيزية، الدمام',
+    accountNumber: 'ELEC-2024-015',
+    meterNumber: 'MTR-55883',
+    billDueDate: new Date(Date.now() + 16 * 24 * 60 * 60 * 1000).toISOString(),
+    billAmount: 505,
+    isPaid: true,
+    createdAt: new Date('2024-09-04'),
+    updatedAt: new Date()
+>>>>>>> e7ed16ef1eb6d960484d7fb8584271a89e1208dd
   }
 ];
 

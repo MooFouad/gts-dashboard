@@ -117,6 +117,7 @@ const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => process.env.DISABLE_RATE_LIMIT === 'true' // Allow disabling for testing
 });
 
 // Apply rate limiting
