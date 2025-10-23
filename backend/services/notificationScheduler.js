@@ -1,11 +1,23 @@
 const cron = require('node-cron');
 const notificationService = require('./notificationService');
 
+/**
+ * ⚠️ IMPORTANT: This scheduler only works on traditional servers (NOT Vercel)!
+ *
+ * For Vercel deployment:
+ * - Use Vercel Cron Jobs (vercel.json configuration)
+ * - OR use external cron service (cron-job.org) to call /api/notifications/cron/daily-check
+ *
+ * See VERCEL_CRON_SETUP.md for detailed instructions.
+ */
 class NotificationScheduler {
   start() {
     // Run daily at 9 AM (adjust NOTIFICATION_CHECK_HOUR in .env)
     const hour = process.env.NOTIFICATION_CHECK_HOUR || 9;
     const cronExpression = `0 ${hour} * * *`;
+
+    // Check if running on Vercel
+    const isVercel = process.env.VERCEL === '1';
 
     console.log(`\n${'='.repeat(60)}`);
     console.log(`📅 NOTIFICATION SCHEDULER ACTIVATED`);
@@ -13,6 +25,13 @@ class NotificationScheduler {
     console.log(`⏰ Schedule: Daily at ${hour}:00 AM`);
     console.log(`📧 Notifications: Email + Windows Push`);
     console.log(`📆 Frequency: Every day from 10 days before until expiration`);
+
+    if (isVercel) {
+      console.log(`\n⚠️  NOTE: Running on Vercel - node-cron won't work!`);
+      console.log(`   Use Vercel Cron Jobs or cron-job.org instead.`);
+      console.log(`   See VERCEL_CRON_SETUP.md for setup instructions.`);
+    }
+
     console.log(`${'='.repeat(60)}\n`);
 
     // Schedule daily check
