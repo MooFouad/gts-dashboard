@@ -3,6 +3,42 @@ const router = express.Router();
 const PushSubscription = require('../models/PushSubscription');
 const notificationService = require('../services/notificationService');
 
+// ========== VERCEL CRON JOB ENDPOINT ==========
+// This endpoint is called by Vercel Cron Jobs daily at 9 AM
+// To set up: Add cron configuration in vercel.json
+router.get('/cron/daily-check', async (req, res) => {
+  try {
+    // Verify request is from Vercel Cron (optional security check)
+    const authHeader = req.headers.authorization;
+    const cronSecret = process.env.CRON_SECRET;
+
+    // If CRON_SECRET is set, verify it
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      console.log('❌ Unauthorized cron request');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    console.log('\n⏰ ========== VERCEL CRON: DAILY NOTIFICATION CHECK ==========');
+    console.log(`Time: ${new Date().toLocaleString()}`);
+
+    const result = await notificationService.sendAllNotifications();
+
+    console.log('========== CRON: NOTIFICATION CHECK COMPLETE ==========\n');
+
+    res.json({
+      success: true,
+      message: 'Daily notification check completed',
+      result
+    });
+  } catch (error) {
+    console.error('❌ Error in cron notification check:', error);
+    res.status(500).json({
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
 // Subscribe to push notifications
 router.post('/subscribe', async (req, res) => {
   try {
