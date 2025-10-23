@@ -168,4 +168,28 @@ router.delete('/:id', deleteHomeRentValidator, validate, async (req, res, next) 
   }
 });
 
+// GET count
+router.get('/count/total', async (req, res, next) => {
+  try {
+    // Guest users - count from session
+    if (req.user && req.user.isGuest) {
+      const homeRents = guestSessionStore.getHomeRents(req.user._id);
+      return res.json({
+        success: true,
+        count: homeRents.length,
+        isDemo: true
+      });
+    }
+
+    // Real user - count from database
+    const count = await HomeRent.countDocuments();
+    res.json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
