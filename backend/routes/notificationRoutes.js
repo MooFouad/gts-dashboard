@@ -6,9 +6,10 @@ const notificationService = require('../services/notificationService');
 // Subscribe to push notifications
 router.post('/subscribe', async (req, res) => {
   try {
-    const { subscription, email } = req.body;
+    const { subscription, email, notificationTypes } = req.body;
 
     console.log('📬 Subscription request received from:', email);
+    console.log('📋 Notification types:', notificationTypes || 'all (default)');
 
     if (!subscription || !email) {
       return res.status(400).json({ error: 'Subscription and email are required' });
@@ -19,6 +20,15 @@ router.post('/subscribe', async (req, res) => {
       return res.status(400).json({ error: 'Invalid subscription format' });
     }
 
+    // Validate notificationTypes if provided
+    const validTypes = ['vehicle', 'homeRent', 'electricity'];
+    if (notificationTypes && !Array.isArray(notificationTypes)) {
+      return res.status(400).json({ error: 'notificationTypes must be an array' });
+    }
+    if (notificationTypes && notificationTypes.some(type => !validTypes.includes(type))) {
+      return res.status(400).json({ error: 'Invalid notification type. Valid types: vehicle, homeRent, electricity' });
+    }
+
     // Check if subscription already exists
     const existing = await PushSubscription.findOne({ endpoint: subscription.endpoint });
 
@@ -27,8 +37,17 @@ router.post('/subscribe', async (req, res) => {
       existing.userEmail = email;
       existing.lastUsed = new Date();
       existing.keys = subscription.keys;
+      // Update notificationTypes if provided, otherwise keep existing or use default
+      if (notificationTypes) {
+        existing.notificationTypes = notificationTypes;
+      }
       await existing.save();
-      return res.json({ success: true, message: 'Subscription updated', id: existing._id });
+      return res.json({
+        success: true,
+        message: 'Subscription updated',
+        id: existing._id,
+        notificationTypes: existing.notificationTypes
+      });
     }
 
     // Create new subscription
@@ -36,6 +55,7 @@ router.post('/subscribe', async (req, res) => {
       endpoint: subscription.endpoint,
       keys: subscription.keys,
       userEmail: email,
+      notificationTypes: notificationTypes || ['vehicle', 'homeRent', 'electricity'],
       userAgent: req.headers['user-agent']
     });
 
@@ -43,15 +63,17 @@ router.post('/subscribe', async (req, res) => {
 
     console.log('✅ New push subscription saved for:', email);
     console.log('Subscription ID:', newSubscription._id);
-    
-    res.json({ 
-      success: true, 
+    console.log('Notification types:', newSubscription.notificationTypes);
+
+    res.json({
+      success: true,
       message: 'Subscribed to notifications',
-      id: newSubscription._id
+      id: newSubscription._id,
+      notificationTypes: newSubscription.notificationTypes
     });
   } catch (error) {
     console.error('❌ Error saving subscription:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message,
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -134,6 +156,69 @@ router.post('/check-now', async (req, res) => {
     res.json({ success: true, result });
   } catch (error) {
     console.error('Error checking notifications:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update notification preferences
+router.post('/update-preferences', async (req, res) => {
+  try {
+    const { email, notificationTypes } = req.body;
+
+    if (!email || !notificationTypes) {
+      return res.status(400).json({ error: 'Email and notificationTypes are required' });
+    }
+
+    // Validate notificationTypes
+    const validTypes = ['vehicle', 'homeRent', 'electricity'];
+    if (!Array.isArray(notificationTypes)) {
+      return res.status(400).json({ error: 'notificationTypes must be an array' });
+    }
+    if (notificationTypes.some(type => !validTypes.includes(type))) {
+      return res.status(400).json({ error: 'Invalid notification type. Valid types: vehicle, homeRent, electricity' });
+    }
+
+    // Update all subscriptions for this email
+    const result = await PushSubscription.updateMany(
+      { userEmail: email },
+      { $set: { notificationTypes: notificationTypes } }
+    );
+
+    console.log('✅ Preferences updated for:', email);
+    console.log('Updated subscriptions:', result.modifiedCount);
+
+    res.json({
+      success: true,
+      message: 'Notification preferences updated',
+      updatedCount: result.modifiedCount,
+      notificationTypes: notificationTypes
+    });
+  } catch (error) {
+    console.error('Error updating preferences:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get notification preferences for a user
+router.get('/preferences/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const subscription = await PushSubscription.findOne({ userEmail: email });
+
+    if (!subscription) {
+      return res.json({
+        success: true,
+        notificationTypes: ['vehicle', 'homeRent', 'electricity'] // Default
+      });
+    }
+
+    res.json({
+      success: true,
+      notificationTypes: subscription.notificationTypes || ['vehicle', 'homeRent', 'electricity']
+    });
+  } catch (error) {
+    console.error('Error fetching preferences:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -237,14 +237,22 @@ class NotificationService {
     }
   }
 
-  // Send push notification to all subscribers
+  // Send push notification to all subscribers (filtered by notificationTypes)
   async sendPushNotification(notification) {
     try {
-      const subscriptions = await PushSubscription.find({});
-      console.log(`📤 Found ${subscriptions.length} push subscription(s)`);
+      const allSubscriptions = await PushSubscription.find({});
+      console.log(`📤 Found ${allSubscriptions.length} total push subscription(s)`);
+
+      // Filter subscriptions based on notification type
+      const subscriptions = allSubscriptions.filter(sub => {
+        const types = sub.notificationTypes || ['vehicle', 'homeRent', 'electricity'];
+        return types.includes(notification.type);
+      });
+
+      console.log(`📋 ${subscriptions.length} subscription(s) are subscribed to '${notification.type}' notifications`);
 
       if (subscriptions.length === 0) {
-        console.log('⚠️ No push subscriptions found - nobody subscribed yet');
+        console.log(`⚠️ No subscriptions found for type '${notification.type}'`);
         return { success: true, sent: 0, total: 0 };
       }
 
@@ -381,11 +389,16 @@ class NotificationService {
     }
   }
 
-  // Send grouped email notifications (all items of same type in one email)
+  // Send grouped email notifications (all items of same type in one email) - filtered by user preferences
   async sendGroupedEmailNotification(notifications, type, emails) {
     try {
       if (!transporter) {
         return { success: false, skipped: true, reason: 'Email not configured' };
+      }
+
+      if (emails.length === 0) {
+        console.log(`⚠️ No recipients subscribed to '${type}' notifications`);
+        return { success: false, skipped: true, reason: 'No recipients for this type' };
       }
 
       const typeTitles = {
@@ -510,30 +523,49 @@ class NotificationService {
       }
     }
 
-    // ========== EMAIL NOTIFICATIONS (Uses same PushSubscription data) ==========
-    // Get unique emails from PushSubscription collection
+    // ========== EMAIL NOTIFICATIONS (Uses same PushSubscription data, filtered by type) ==========
     const pushSubscriptions = await PushSubscription.find({});
-    const uniqueEmails = [...new Set(pushSubscriptions.map(sub => sub.userEmail))];
 
-    if (uniqueEmails.length > 0) {
-      console.log(`\n📧 Sending Email Notifications to ${uniqueEmails.length} email address(es)...`);
+    if (pushSubscriptions.length > 0) {
+      console.log(`\n📧 Processing Email Notifications...`);
 
-      // Send grouped emails by type
+      // Send grouped emails by type (filter recipients by their preferences)
       if (groupedNotifications.vehicle.length > 0) {
-        console.log(`\n📧 Sending grouped vehicle email (${groupedNotifications.vehicle.length} items)`);
-        const result = await this.sendGroupedEmailNotification(groupedNotifications.vehicle, 'vehicle', uniqueEmails);
+        // Get emails subscribed to vehicle notifications
+        const vehicleEmails = [...new Set(
+          pushSubscriptions
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity']).includes('vehicle'))
+            .map(sub => sub.userEmail)
+        )];
+
+        console.log(`\n📧 Sending grouped vehicle email to ${vehicleEmails.length} recipient(s) (${groupedNotifications.vehicle.length} items)`);
+        const result = await this.sendGroupedEmailNotification(groupedNotifications.vehicle, 'vehicle', vehicleEmails);
         if (result.success) emailSent++;
       }
 
       if (groupedNotifications.homeRent.length > 0) {
-        console.log(`\n📧 Sending grouped home rent email (${groupedNotifications.homeRent.length} items)`);
-        const result = await this.sendGroupedEmailNotification(groupedNotifications.homeRent, 'homeRent', uniqueEmails);
+        // Get emails subscribed to homeRent notifications
+        const homeRentEmails = [...new Set(
+          pushSubscriptions
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity']).includes('homeRent'))
+            .map(sub => sub.userEmail)
+        )];
+
+        console.log(`\n📧 Sending grouped home rent email to ${homeRentEmails.length} recipient(s) (${groupedNotifications.homeRent.length} items)`);
+        const result = await this.sendGroupedEmailNotification(groupedNotifications.homeRent, 'homeRent', homeRentEmails);
         if (result.success) emailSent++;
       }
 
       if (groupedNotifications.electricity.length > 0) {
-        console.log(`\n📧 Sending grouped electricity email (${groupedNotifications.electricity.length} items)`);
-        const result = await this.sendGroupedEmailNotification(groupedNotifications.electricity, 'electricity', uniqueEmails);
+        // Get emails subscribed to electricity notifications
+        const electricityEmails = [...new Set(
+          pushSubscriptions
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity']).includes('electricity'))
+            .map(sub => sub.userEmail)
+        )];
+
+        console.log(`\n📧 Sending grouped electricity email to ${electricityEmails.length} recipient(s) (${groupedNotifications.electricity.length} items)`);
+        const result = await this.sendGroupedEmailNotification(groupedNotifications.electricity, 'electricity', electricityEmails);
         if (result.success) emailSent++;
       }
     } else {

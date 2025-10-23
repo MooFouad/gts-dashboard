@@ -10,6 +10,11 @@ const NotificationSettings = () => {
   const [message, setMessage] = useState('');
   const [debugLog, setDebugLog] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [notificationTypes, setNotificationTypes] = useState({
+    vehicle: true,
+    homeRent: true,
+    electricity: true
+  });
 
   const addDebugLog = (msg) => {
     console.log(msg);
@@ -53,6 +58,13 @@ const NotificationSettings = () => {
       return;
     }
 
+    // Validate at least one notification type selected
+    const selectedTypes = Object.keys(notificationTypes).filter(key => notificationTypes[key]);
+    if (selectedTypes.length === 0) {
+      setMessage('Please select at least one notification type');
+      return;
+    }
+
     setLoading(true);
     setMessage('');
     setDebugLog([]);
@@ -70,12 +82,12 @@ const NotificationSettings = () => {
         throw new Error('Notification permission denied. Please enable it in browser settings.');
       }
 
-      addDebugLog('📝 Subscribing to notifications with email...');
-      const result = await pushNotificationService.subscribe(email);
+      addDebugLog(`📝 Subscribing to notifications with email and types: ${selectedTypes.join(', ')}...`);
+      const result = await pushNotificationService.subscribe(email, selectedTypes);
 
       addDebugLog('✅ Subscribe method completed');
 
-      setMessage('✅ Successfully subscribed! You will receive both browser push and email notifications at 9 AM daily.');
+      setMessage(`✅ Successfully subscribed to ${selectedTypes.join(', ')} notifications! You will receive both browser push and email notifications at 9 AM daily.`);
       addDebugLog('✅ Subscription complete!');
 
       // Clear email input for next subscription
@@ -282,6 +294,72 @@ const NotificationSettings = () => {
             </p>
           </div>
 
+          {/* Notification Types Selection */}
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              <Bell size={16} className="inline mr-2" />
+              Choose Notification Types
+            </label>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={notificationTypes.vehicle}
+                  onChange={(e) => setNotificationTypes({ ...notificationTypes, vehicle: e.target.checked })}
+                  disabled={isSubscribed}
+                  className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900 group-hover:text-blue-700">
+                    🚗 Vehicle Notifications
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    License, inspection, and insurance expiration alerts
+                  </p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={notificationTypes.homeRent}
+                  onChange={(e) => setNotificationTypes({ ...notificationTypes, homeRent: e.target.checked })}
+                  disabled={isSubscribed}
+                  className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900 group-hover:text-blue-700">
+                    🏠 Home Rent Notifications
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    Rental contract ending date alerts
+                  </p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={notificationTypes.electricity}
+                  onChange={(e) => setNotificationTypes({ ...notificationTypes, electricity: e.target.checked })}
+                  disabled={isSubscribed}
+                  className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900 group-hover:text-blue-700">
+                    ⚡ Electricity Bill Notifications
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    Unpaid bill due date alerts
+                  </p>
+                </div>
+              </label>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              ⚠️ Select at least one notification type
+            </p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Mail size={16} className="inline mr-2" />
@@ -378,32 +456,56 @@ const NotificationSettings = () => {
                 📋 Active Subscriptions ({subscriptions.length})
               </h3>
               <div className="space-y-2">
-                {subscriptions.map((subscription) => (
-                  <div
-                    key={subscription._id}
-                    className="flex items-center justify-between bg-white p-3 rounded-lg border"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Mail size={16} className="text-blue-600" />
-                        <span className="text-sm font-medium">{subscription.userEmail}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 ml-6">
-                        Added: {new Date(subscription.createdAt).toLocaleDateString()} •
-                        Last used: {new Date(subscription.lastUsed).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveSubscription(subscription)}
-                      disabled={loading}
-                      className="flex items-center gap-1 px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
-                      title="Remove this subscription"
+                {subscriptions.map((subscription) => {
+                  const types = subscription.notificationTypes || ['vehicle', 'homeRent', 'electricity'];
+                  const typeIcons = {
+                    vehicle: '🚗',
+                    homeRent: '🏠',
+                    electricity: '⚡'
+                  };
+                  const typeLabels = {
+                    vehicle: 'Vehicles',
+                    homeRent: 'Home Rent',
+                    electricity: 'Electricity'
+                  };
+
+                  return (
+                    <div
+                      key={subscription._id}
+                      className="flex items-start justify-between bg-white p-3 rounded-lg border"
                     >
-                      <BellOff size={14} />
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Mail size={16} className="text-blue-600" />
+                          <span className="text-sm font-medium">{subscription.userEmail}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 ml-6 mt-1">
+                          Added: {new Date(subscription.createdAt).toLocaleDateString()} •
+                          Last used: {new Date(subscription.lastUsed).toLocaleDateString()}
+                        </p>
+                        <div className="flex flex-wrap gap-1 ml-6 mt-2">
+                          {types.map(type => (
+                            <span
+                              key={type}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full"
+                            >
+                              {typeIcons[type]} {typeLabels[type]}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveSubscription(subscription)}
+                        disabled={loading}
+                        className="flex items-center gap-1 px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
+                        title="Remove this subscription"
+                      >
+                        <BellOff size={14} />
+                        Remove
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
