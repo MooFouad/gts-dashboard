@@ -113,32 +113,21 @@ export const exportHomeRentsToExcel = (homeRents) => {
     return;
   }
 
-  // Select only the fields that appear in the table
+  // Select only the fields that exist in the form
   const exportData = homeRents.map(rent => ({
     'Contract Number': rent.contractNumber || '',
-    'Property Name': rent.name || '',
-    'Location': rent.location || '',
-    'District': rent.district || '',
-    'Project': rent.project || '',
     'Starting Date': rent.contractStartingDate || '',
     'End Date': rent.contractEndingDate || '',
-    'Contract Status': rent.contractStatus || '',
-    'Duration': rent.duration || '',
-    'First Payment': rent.firstPaymentDate || '',
-    'Second Payment': rent.secondPaymentDate || '',
-    'Third Payment': rent.thirdPaymentDate || '',
-    'Fourth Payment': rent.fourthPaymentDate || '',
-    'Annual Rent': rent.rentAnnually || '',
+    'Notice Period': rent.notice || '',
+    'Payment Terms': rent.paymentTerms || '',
+    'Payment Type': rent.paymentType || '',
+    'Payment Status': rent.paymentStatus || '',
+    'Amount (SAR)': rent.amount || '',
+    'Annual Rent (SAR)': rent.rentAnnually || '',
     'Address': rent.address || '',
     'Contact Person': rent.contactPerson || '',
-    'Contact Number': rent.contactNo || '',
-    'GTS Contact': rent.gts || '',
-    'Electricity Meter': rent.electricityMeterNumber || '',
-    'Saudi Electric Company': rent.saudiElectricCompany || '',
-    'BMS': rent.bms || '',
-    'SPD': rent.spd || '',
-    'Notes': rent.note || '',
-    'Remarks': rent.remarks || ''
+    'GTS Contact': rent.gtsContact || '',
+    'Comments': rent.comments || ''
   }));
 
   const wb = XLSX.utils.book_new();
@@ -146,11 +135,19 @@ export const exportHomeRentsToExcel = (homeRents) => {
 
   // Set column widths
   ws['!cols'] = [
-    { wch: 20 }, { wch: 25 }, { wch: 25 }, { wch: 20 }, { wch: 20 },
-    { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 },
-    { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 },
-    { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 20 }, { wch: 25 },
-    { wch: 10 }, { wch: 10 }, { wch: 30 }, { wch: 30 }
+    { wch: 20 }, // Contract Number
+    { wch: 15 }, // Starting Date
+    { wch: 15 }, // End Date
+    { wch: 15 }, // Notice Period
+    { wch: 18 }, // Payment Terms
+    { wch: 18 }, // Payment Type
+    { wch: 18 }, // Payment Status
+    { wch: 15 }, // Amount
+    { wch: 18 }, // Annual Rent
+    { wch: 40 }, // Address
+    { wch: 20 }, // Contact Person
+    { wch: 20 }, // GTS Contact
+    { wch: 40 }  // Comments
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, 'Home Rents');
@@ -228,29 +225,18 @@ export const exportAllDataToExcel = (vehicles, homeRents, electricity) => {
   if (homeRents && homeRents.length > 0) {
     const homeRentsData = homeRents.map(rent => ({
       'Contract Number': rent.contractNumber || '',
-      'Property Name': rent.name || '',
-      'Location': rent.location || '',
-      'District': rent.district || '',
-      'Project': rent.project || '',
       'Starting Date': rent.contractStartingDate || '',
       'End Date': rent.contractEndingDate || '',
-      'Contract Status': rent.contractStatus || '',
-      'Duration': rent.duration || '',
-      'First Payment': rent.firstPaymentDate || '',
-      'Second Payment': rent.secondPaymentDate || '',
-      'Third Payment': rent.thirdPaymentDate || '',
-      'Fourth Payment': rent.fourthPaymentDate || '',
-      'Annual Rent': rent.rentAnnually || '',
+      'Notice Period': rent.notice || '',
+      'Payment Terms': rent.paymentTerms || '',
+      'Payment Type': rent.paymentType || '',
+      'Payment Status': rent.paymentStatus || '',
+      'Amount (SAR)': rent.amount || '',
+      'Annual Rent (SAR)': rent.rentAnnually || '',
       'Address': rent.address || '',
       'Contact Person': rent.contactPerson || '',
-      'Contact Number': rent.contactNo || '',
-      'GTS Contact': rent.gts || '',
-      'Electricity Meter': rent.electricityMeterNumber || '',
-      'Saudi Electric Company': rent.saudiElectricCompany || '',
-      'BMS': rent.bms || '',
-      'SPD': rent.spd || '',
-      'Notes': rent.note || '',
-      'Remarks': rent.remarks || ''
+      'GTS Contact': rent.gtsContact || '',
+      'Comments': rent.comments || ''
     }));
     const wsHomeRents = XLSX.utils.json_to_sheet(homeRentsData);
     XLSX.utils.book_append_sheet(wb, wsHomeRents, 'Home Rents');
