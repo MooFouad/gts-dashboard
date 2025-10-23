@@ -18,11 +18,13 @@ class NotificationScheduler {
 
     // Check if running on Vercel
     const isVercel = process.env.VERCEL === '1';
+    const isRender = process.env.RENDER === 'true';
 
     console.log(`\n${'='.repeat(60)}`);
     console.log(`📅 NOTIFICATION SCHEDULER ACTIVATED`);
     console.log(`${'='.repeat(60)}`);
-    console.log(`⏰ Schedule: Daily at ${hour}:00 AM`);
+    console.log(`⏰ Schedule: Daily at ${hour}:00 (server timezone)`);
+    console.log(`🌍 Server Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
     console.log(`📧 Notifications: Email + Windows Push`);
     console.log(`📆 Frequency: Every day from 10 days before until expiration`);
 
@@ -30,6 +32,12 @@ class NotificationScheduler {
       console.log(`\n⚠️  NOTE: Running on Vercel - node-cron won't work!`);
       console.log(`   Use Vercel Cron Jobs or cron-job.org instead.`);
       console.log(`   See VERCEL_CRON_SETUP.md for setup instructions.`);
+    }
+
+    if (isRender) {
+      console.log(`\n✅ Running on Render - node-cron will work!`);
+      console.log(`   ⚠️  Note: On Free tier, service sleeps after 15 min of inactivity`);
+      console.log(`   Use UptimeRobot or upgrade to keep service alive 24/7`);
     }
 
     console.log(`${'='.repeat(60)}\n`);
