@@ -140,8 +140,8 @@ class PushNotificationService {
     }
   }
 
-  // Subscribe to push notifications (email is optional - for backward compatibility)
-  async subscribe(email = null, retryCount = 0) {
+  // Subscribe to push notifications (email and notificationTypes are optional)
+  async subscribe(email = null, notificationTypes = null, retryCount = 0) {
     try {
       console.log('🔔 Starting push subscription process...');
 
@@ -200,7 +200,7 @@ class PushNotificationService {
       // Step 8: Create new subscription with error handling
       console.log('Creating new push subscription...');
       console.log('Using applicationServerKey length:', convertedVapidKey.length);
-      
+
       try {
         this.subscription = await swRegistration.pushManager.subscribe({
           userVisibleOnly: true,
@@ -208,13 +208,13 @@ class PushNotificationService {
         });
       } catch (subError) {
         console.error('❌ Push subscription creation failed:', subError);
-        
+
         // If first attempt, try with fresh service worker
         if (retryCount === 0) {
           console.log('🔄 Retrying with fresh service worker...');
-          return await this.subscribe(email, 1);
+          return await this.subscribe(email, notificationTypes, 1);
         }
-        
+
         throw new Error(`Push subscription failed: ${subError.message}. Try: 1) Clear browser data, 2) Restart browser, 3) Check internet connection.`);
       }
 
@@ -225,12 +225,20 @@ class PushNotificationService {
       console.log('✅ Step 7: Push subscription created successfully');
       console.log('Subscription endpoint:', this.subscription.endpoint.substring(0, 50) + '...');
 
-      // Step 9: Send subscription to server
+      // Step 9: Send subscription to server with notification types
       console.log('Sending subscription to server...');
-      const serverResponse = await api.post('/notifications/subscribe', {
+      const payload = {
         subscription: this.subscription.toJSON(),
         email: email || 'anonymous'
-      });
+      };
+
+      // Add notificationTypes if provided
+      if (notificationTypes && Array.isArray(notificationTypes)) {
+        payload.notificationTypes = notificationTypes;
+        console.log('Including notification types:', notificationTypes);
+      }
+
+      const serverResponse = await api.post('/notifications/subscribe', payload);
 
       console.log('✅ Step 8: Subscription saved to server:', serverResponse);
 
