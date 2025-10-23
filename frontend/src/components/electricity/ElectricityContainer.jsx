@@ -46,7 +46,9 @@ const ElectricityContainer = () => {
   });
 
   const handleCreate = () => {
-    setFormDialog({ isOpen: true, data: null });
+    // Calculate next number based on array length
+    const nextNo = items.length + 1;
+    setFormDialog({ isOpen: true, data: null, nextNo });
   };
 
   const handleEdit = (bill) => {
@@ -174,6 +176,7 @@ const ElectricityContainer = () => {
       >
         <ElectricityForm
           initialData={formDialog.data}
+          nextNo={formDialog.nextNo}
           onSubmit={handleSubmit}
           onCancel={() => setFormDialog({ isOpen: false, data: null })}
         />
