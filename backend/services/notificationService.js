@@ -449,6 +449,9 @@ class NotificationService {
             </div>
             <div class="content">
               <h2>${typeTitle}</h2>
+              <p style="background: #e0f2fe; padding: 10px; border-radius: 5px; border-left: 3px solid #0284c7; margin-bottom: 15px;">
+                <strong>📋 Subscription Type:</strong> You are receiving this email because you subscribed to <strong>${typeTitle}</strong> notifications.
+              </p>
               <p>You have ${notifications.length} alert(s) requiring attention:</p>
               ${alertItems}
               <p>Please take necessary action before the expiration dates.</p>
