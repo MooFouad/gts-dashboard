@@ -151,6 +151,7 @@ app.post('/api/notifications/unsubscribe', notificationRoutes);
 app.get('/api/notifications/vapid-public-key', notificationRoutes);
 app.post('/api/notifications/test', notificationRoutes);
 app.post('/api/notifications/test-push', notificationRoutes);
+app.post('/api/notifications/check-now', notificationRoutes);
 app.get('/api/notifications/subscriptions', notificationRoutes);
 
 // Protected routes (authentication required)
