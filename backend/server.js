@@ -18,7 +18,7 @@ validateEnv();
 const { errorHandler, handleUnhandledRejection, handleUncaughtException } = require('./middleware/errorHandler');
 
 // Authentication middleware
-const { authenticate, authorize, blockGuestWrites } = require('./middleware/auth');
+const { authenticate, authorize } = require('./middleware/auth');
 
 // Notification scheduler
 const notificationScheduler = require('./services/notificationScheduler');
@@ -158,7 +158,6 @@ app.get('/api/notifications/cron/daily-check', notificationRoutes);
 app.post('/api/notifications/check-now', notificationRoutes);
 
 // Protected routes (authentication required)
-// Guests use in-memory session store (no database access)
 app.use('/api/vehicles', authenticate, require('./routes/vehicleRoutes'));
 app.use('/api/home-rents', authenticate, require('./routes/homeRentRoutes'));
 app.use('/api/electricity', authenticate, require('./routes/electricityRoutes'));
