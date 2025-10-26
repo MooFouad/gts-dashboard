@@ -153,6 +153,9 @@ app.get('/api/notifications/vapid-public-key', notificationRoutes);
 app.post('/api/notifications/test', notificationRoutes);
 app.post('/api/notifications/test-push', notificationRoutes);
 app.get('/api/notifications/subscriptions', notificationRoutes);
+// Cron endpoints (no auth required for Vercel Cron Jobs and UptimeRobot)
+app.get('/api/notifications/cron/daily-check', notificationRoutes);
+app.post('/api/notifications/check-now', notificationRoutes);
 
 // Protected routes (authentication required)
 // Guests use in-memory session store (no database access)
