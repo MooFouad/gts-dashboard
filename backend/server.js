@@ -156,13 +156,12 @@ app.post('/api/notifications/check-now', notificationRoutes);
 app.get('/api/notifications/subscriptions', notificationRoutes);
 // Cron endpoints (no auth required for Vercel Cron Jobs and UptimeRobot)
 app.get('/api/notifications/cron/daily-check', notificationRoutes);
-app.post('/api/notifications/check-now', notificationRoutes);
 
 // Protected routes (authentication required)
 app.use('/api/vehicles', authenticate, require('./routes/vehicleRoutes'));
 app.use('/api/home-rents', authenticate, require('./routes/homeRentRoutes'));
 app.use('/api/electricity', authenticate, require('./routes/electricityRoutes'));
-app.use('/api/notifications', authenticate, notificationRoutes);
+// Note: Notification routes are defined individually above (public and cron routes)
 app.use('/api/import', authenticate, authorize('admin', 'user'), require('./routes/importRoutes'));
 app.use('/api/absher', authenticate, require('./routes/absherRoutes'));
 
