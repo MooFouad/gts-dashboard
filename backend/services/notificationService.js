@@ -12,43 +12,56 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY
 );
 
-// Configure Email (SMTP only - Gmail for local, Brevo for production)
+// Configure Email (SMTP - Gmail recommended)
 let transporter = null;
 const isEmailConfigured = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
 
 if (isEmailConfigured) {
   try {
     console.log('📧 Initializing email transporter...');
-    const smtpProvider = process.env.EMAIL_HOST ? 'Brevo' : (process.env.EMAIL_SERVICE || 'Custom');
+    const smtpProvider = process.env.EMAIL_SERVICE || 'SMTP';
     console.log('   Provider:', smtpProvider);
-    console.log('   Host:', process.env.EMAIL_HOST || 'default');
     console.log('   User:', process.env.EMAIL_USER);
     console.log('   Pass configured:', process.env.EMAIL_PASS ? 'Yes' : 'No');
 
-    transporter = nodemailer.createTransport({
-      // Prefer well-known service if provided, else allow host/port configuration
-      service: process.env.EMAIL_SERVICE,
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : undefined,
-      secure: process.env.EMAIL_SECURE ? process.env.EMAIL_SECURE === 'true' : undefined,
+    // Build transporter config
+    // For Gmail, use the 'service' shorthand
+    // For Brevo/custom SMTP, use host/port/secure
+    const transportConfig = {
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
       },
-      // Add connection pooling and timeouts
+      // Connection pooling and timeouts
       pool: true,
       maxConnections: 5,
       maxMessages: 10,
       rateDelta: 1000,
       rateLimit: 5,
-      // Optimized timeouts for Brevo (faster than Gmail)
-      connectionTimeout: 20000, // 20 seconds
-      greetingTimeout: 15000,   // 15 seconds
-      socketTimeout: 30000,     // 30 seconds
-      // Add debug mode in development
+      connectionTimeout: 30000,
+      greetingTimeout: 20000,
+      socketTimeout: 45000,
       debug: process.env.NODE_ENV === 'development',
       logger: process.env.NODE_ENV === 'development'
-    });
+    };
+
+    // If EMAIL_HOST is provided, use custom SMTP (Brevo, etc.)
+    if (process.env.EMAIL_HOST) {
+      console.log('   Host:', process.env.EMAIL_HOST);
+      console.log('   Port:', process.env.EMAIL_PORT || 'default');
+      console.log('   Secure:', process.env.EMAIL_SECURE || 'default');
+
+      transportConfig.host = process.env.EMAIL_HOST;
+      transportConfig.port = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : 587;
+      transportConfig.secure = process.env.EMAIL_SECURE === 'true';
+    } else if (process.env.EMAIL_SERVICE === 'gmail') {
+      // Use Gmail's built-in service config
+      transportConfig.service = 'gmail';
+    } else {
+      console.error('⚠️  No EMAIL_HOST or valid EMAIL_SERVICE provided');
+    }
+
+    transporter = nodemailer.createTransport(transportConfig);
 
     transporter.verify((error) => {
       if (error) {
@@ -63,7 +76,7 @@ if (isEmailConfigured) {
     console.error('❌ Failed to initialize email transporter:', err.message);
   }
 } else {
-  console.log('⚠️ Email not configured. Set EMAIL_USER, EMAIL_PASS, and optionally EMAIL_HOST/EMAIL_PORT.');
+  console.log('⚠️ Email not configured. Set EMAIL_USER, EMAIL_PASS, and EMAIL_SERVICE.');
 }
 
 class NotificationService {
@@ -224,14 +237,22 @@ class NotificationService {
     }
   }
 
-  // Send push notification to all subscribers
+  // Send push notification to all subscribers (filtered by notificationTypes)
   async sendPushNotification(notification) {
     try {
-      const subscriptions = await PushSubscription.find({});
-      console.log(`📤 Found ${subscriptions.length} push subscription(s)`);
+      const allSubscriptions = await PushSubscription.find({});
+      console.log(`📤 Found ${allSubscriptions.length} total push subscription(s)`);
+
+      // Filter subscriptions based on notification type
+      const subscriptions = allSubscriptions.filter(sub => {
+        const types = sub.notificationTypes || ['vehicle', 'homeRent', 'electricity'];
+        return types.includes(notification.type);
+      });
+
+      console.log(`📋 ${subscriptions.length} subscription(s) are subscribed to '${notification.type}' notifications`);
 
       if (subscriptions.length === 0) {
-        console.log('⚠️ No push subscriptions found - nobody subscribed yet');
+        console.log(`⚠️ No subscriptions found for type '${notification.type}'`);
         return { success: true, sent: 0, total: 0 };
       }
 
@@ -368,11 +389,16 @@ class NotificationService {
     }
   }
 
-  // Send grouped email notifications (all items of same type in one email)
+  // Send grouped email notifications (all items of same type in one email) - filtered by user preferences
   async sendGroupedEmailNotification(notifications, type, emails) {
     try {
       if (!transporter) {
         return { success: false, skipped: true, reason: 'Email not configured' };
+      }
+
+      if (emails.length === 0) {
+        console.log(`⚠️ No recipients subscribed to '${type}' notifications`);
+        return { success: false, skipped: true, reason: 'No recipients for this type' };
       }
 
       const typeTitles = {
@@ -423,6 +449,9 @@ class NotificationService {
             </div>
             <div class="content">
               <h2>${typeTitle}</h2>
+              <p style="background: #e0f2fe; padding: 10px; border-radius: 5px; border-left: 3px solid #0284c7; margin-bottom: 15px;">
+                <strong>📋 Subscription Type:</strong> You are receiving this email because you subscribed to <strong>${typeTitle}</strong> notifications.
+              </p>
               <p>You have ${notifications.length} alert(s) requiring attention:</p>
               ${alertItems}
               <p>Please take necessary action before the expiration dates.</p>
@@ -497,30 +526,49 @@ class NotificationService {
       }
     }
 
-    // ========== EMAIL NOTIFICATIONS (Uses same PushSubscription data) ==========
-    // Get unique emails from PushSubscription collection
+    // ========== EMAIL NOTIFICATIONS (Uses same PushSubscription data, filtered by type) ==========
     const pushSubscriptions = await PushSubscription.find({});
-    const uniqueEmails = [...new Set(pushSubscriptions.map(sub => sub.userEmail))];
 
-    if (uniqueEmails.length > 0) {
-      console.log(`\n📧 Sending Email Notifications to ${uniqueEmails.length} email address(es)...`);
+    if (pushSubscriptions.length > 0) {
+      console.log(`\n📧 Processing Email Notifications...`);
 
-      // Send grouped emails by type
+      // Send grouped emails by type (filter recipients by their preferences)
       if (groupedNotifications.vehicle.length > 0) {
-        console.log(`\n📧 Sending grouped vehicle email (${groupedNotifications.vehicle.length} items)`);
-        const result = await this.sendGroupedEmailNotification(groupedNotifications.vehicle, 'vehicle', uniqueEmails);
+        // Get emails subscribed to vehicle notifications
+        const vehicleEmails = [...new Set(
+          pushSubscriptions
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity']).includes('vehicle'))
+            .map(sub => sub.userEmail)
+        )];
+
+        console.log(`\n📧 Sending grouped vehicle email to ${vehicleEmails.length} recipient(s) (${groupedNotifications.vehicle.length} items)`);
+        const result = await this.sendGroupedEmailNotification(groupedNotifications.vehicle, 'vehicle', vehicleEmails);
         if (result.success) emailSent++;
       }
 
       if (groupedNotifications.homeRent.length > 0) {
-        console.log(`\n📧 Sending grouped home rent email (${groupedNotifications.homeRent.length} items)`);
-        const result = await this.sendGroupedEmailNotification(groupedNotifications.homeRent, 'homeRent', uniqueEmails);
+        // Get emails subscribed to homeRent notifications
+        const homeRentEmails = [...new Set(
+          pushSubscriptions
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity']).includes('homeRent'))
+            .map(sub => sub.userEmail)
+        )];
+
+        console.log(`\n📧 Sending grouped home rent email to ${homeRentEmails.length} recipient(s) (${groupedNotifications.homeRent.length} items)`);
+        const result = await this.sendGroupedEmailNotification(groupedNotifications.homeRent, 'homeRent', homeRentEmails);
         if (result.success) emailSent++;
       }
 
       if (groupedNotifications.electricity.length > 0) {
-        console.log(`\n📧 Sending grouped electricity email (${groupedNotifications.electricity.length} items)`);
-        const result = await this.sendGroupedEmailNotification(groupedNotifications.electricity, 'electricity', uniqueEmails);
+        // Get emails subscribed to electricity notifications
+        const electricityEmails = [...new Set(
+          pushSubscriptions
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity']).includes('electricity'))
+            .map(sub => sub.userEmail)
+        )];
+
+        console.log(`\n📧 Sending grouped electricity email to ${electricityEmails.length} recipient(s) (${groupedNotifications.electricity.length} items)`);
+        const result = await this.sendGroupedEmailNotification(groupedNotifications.electricity, 'electricity', electricityEmails);
         if (result.success) emailSent++;
       }
     } else {
@@ -619,20 +667,19 @@ class NotificationService {
     };
 
     try {
-      // Add timeout wrapper - 10 seconds for Brevo (faster than Gmail)
-      const sendWithTimeout = (mailOptions, timeout = 10000) => {
+      // Add timeout wrapper
+      const sendWithTimeout = (mailOptions, timeout = 30000) => {
         return Promise.race([
           transporter.sendMail(mailOptions),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('SMTP timeout after 10 seconds')), timeout)
+            setTimeout(() => reject(new Error('SMTP timeout after 30 seconds')), timeout)
           )
         ]);
       };
 
-      const smtpProvider = process.env.EMAIL_HOST ? 'Brevo SMTP' : 'Gmail SMTP';
+      const smtpProvider = process.env.EMAIL_SERVICE || 'SMTP';
       console.log('📧 Sending test email via', smtpProvider);
       console.log('   To:', email);
-      console.log('   Host:', process.env.EMAIL_HOST || 'default (Gmail)');
 
       const startTime = Date.now();
       const info = await sendWithTimeout(mailOptions);
@@ -650,15 +697,15 @@ class NotificationService {
 
       // Provide helpful error messages
       if (error.message.includes('timeout') || error.code === 'ETIMEDOUT' || error.code === 'ESOCKET') {
-        throw new Error('SMTP connection timed out. If on Render Free tier, Gmail SMTP is blocked. Please use Brevo SMTP instead: Set EMAIL_HOST=smtp-relay.brevo.com, EMAIL_PORT=587, and get credentials from https://app.brevo.com');
+        throw new Error('SMTP connection timed out. Please check your internet connection or SMTP server settings.');
       }
 
       if (error.code === 'EAUTH') {
-        throw new Error('SMTP authentication failed. Please verify EMAIL_USER and EMAIL_PASS are correct. For Gmail, use an App Password. For Brevo, use your SMTP key.');
+        throw new Error('SMTP authentication failed. Please verify EMAIL_USER and EMAIL_PASS are correct. For Gmail, use an App Password from https://myaccount.google.com/apppasswords');
       }
 
       if (error.code === 'ECONNECTION' || error.code === 'ENOTFOUND') {
-        throw new Error('Cannot connect to SMTP server. Please check EMAIL_HOST and EMAIL_PORT settings, or verify your internet connection.');
+        throw new Error('Cannot connect to SMTP server. Please verify your network connection.');
       }
 
       throw new Error(`Failed to send email: ${error.message}. Code: ${error.code || 'unknown'}`);

@@ -1,9 +1,30 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run dev)",
-      "Bash(netstat -ano)",
-      "Bash(findstr :5000)"
+      "Bash(git add backend/services/notificationService.js frontend/src/services/pushNotificationService.js)",
+      "Bash(git commit -m \"Fix: Add email timeout handling and connection pooling for production\n\n- Add nodemailer connection pooling and timeout settings (30s connection, 45s socket)\n- Reduce email send timeout from 60s to 30s on backend\n- Update frontend timeout to 40s to match backend\n- Add detailed error logging with duration tracking\n- Improve error messages for timeout, auth, and connection failures\n\nThis fixes email timeouts in production environments where Gmail SMTP may be slow.\")",
+      "Bash(nslookup smtp.gmail.com)",
+      "Bash(Test-NetConnection -ComputerName smtp.gmail.com -Port 587)",
+      "Bash(Select-Object ComputerName, RemoteAddress, TcpTestSucceeded)",
+      "Bash(ping -n 2 smtp.gmail.com)",
+      "Bash(curl -s https://ipapi.co/188.54.246.10/json/)",
+      "Bash(git commit -m \"Fix: Increase email timeouts and add detailed logging for production\n\n- Increase backend timeout from 30s to 90s for slow production environments\n- Increase frontend timeout from 40s to 100s\n- Add detailed logging to track email sending process\n- Add specific error messages for different failure scenarios (auth, timeout, connection)\n- Add transporter initialization logging to verify email config on startup\n- Set longer connection/socket timeouts (60s) for production Gmail SMTP\n\nThis should fix email sending issues on Render production environment.\")",
+      "Bash(npm install resend)",
+      "Bash(git add backend/services/notificationService.js backend/package.json backend/package-lock.json)",
+      "Bash(git commit -m \"Add Resend API fallback for email sending\n\n- Add Resend package for email API support\n- Implement automatic fallback from SMTP to Resend API\n- Try Gmail SMTP first (works locally), fallback to Resend on production\n- Reduce SMTP timeout to 30s for faster failover\n- Add helpful error messages guiding to configure Resend API\n- Resend API works on Render Free tier (SMTP is blocked)\n\nThis fixes email sending on Render production by using Resend API.\nLocal development still uses Gmail SMTP.\")",
+      "Bash(git commit -m \"Fix: Add detailed logging for Resend API response to debug email ID issue\")",
+      "Bash(npm uninstall resend)",
+      "Bash(git add backend/services/notificationService.js backend/package.json backend/package-lock.json backend/.env.example)",
+      "Bash(git commit -m \"Switch from Resend to Brevo SMTP for production email\n\n- Remove Resend API dependency and all related code\n- Optimize SMTP timeout to 10s (Brevo is faster than Gmail)\n- Update logs to show provider (Gmail/Brevo SMTP)\n- Improve error messages to guide users to Brevo setup\n- Update .env.example with detailed Brevo configuration instructions\n- Reduce connection timeouts (20s/15s/30s optimized for Brevo)\n\nBenefits:\n- Brevo SMTP works on Render Free tier (300 emails/day free)\n- No domain verification required for Brevo\n- Simpler codebase (removed Resend fallback logic)\n- Faster email sending (10s timeout vs 30s)\n- Local development continues using Gmail SMTP\n\nProduction setup required:\n1. Sign up at https://app.brevo.com\n2. Get SMTP credentials from Dashboard → SMTP & API\n3. Set EMAIL_HOST=smtp-relay.brevo.com, EMAIL_PORT=587\n4. Use Brevo SMTP key as EMAIL_PASS\")",
+      "Bash(npm install)",
+      "Bash(taskkill /F /PID 28100)",
+      "Bash(node server.js)",
+      "Bash(git add backend/config/validateEnv.js)",
+      "Bash(git commit -m \"Fix: Make EMAIL_SERVICE optional in environment validation\n\n- Remove EMAIL_SERVICE from required environment variables\n- Add comment explaining it''s only needed for Gmail (local dev)\n- Production uses EMAIL_HOST/EMAIL_PORT for Brevo SMTP\n\nThis fixes deployment failure on Render when using Brevo.\")",
+      "Bash(node -e \"console.log(''Testing module.exports...''); const app = require(''./server.js''); console.log(''✅ Server module loaded successfully''); console.log(''✅ App exported:'', typeof app === ''function'' ? ''Yes'' : ''No'');\")",
+      "Bash(git add backend/vercel.json backend/server.js backend/.env.example backend/config/validateEnv.js backend/services/notificationService.js DEPLOY_VERCEL.md)",
+      "Bash(git add -f DEPLOY_VERCEL.md)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nPrepare backend for Vercel deployment with Gmail SMTP\n\nChanges:\n- Add vercel.json for Vercel serverless deployment configuration\n- Update server.js to export app for Vercel compatibility\n- Revert from Brevo back to Gmail SMTP (original system)\n- Make EMAIL_SERVICE required again in environment validation\n- Simplify email configuration to Gmail only\n- Add comprehensive Vercel deployment guide (DEPLOY_VERCEL.md)\n\nBenefits:\n- Vercel supports Gmail SMTP (no port blocking like Render)\n- Cleaner codebase with original Gmail SMTP system\n- Works locally and on Vercel serverless functions\n- Auto-deployment on GitHub push\n- Comprehensive deployment documentation\n\nProduction ready for Vercel deployment.\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

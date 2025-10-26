@@ -117,6 +117,7 @@ const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => process.env.DISABLE_RATE_LIMIT === 'true' // Allow disabling for testing
 });
 
 // Apply rate limiting
@@ -153,9 +154,11 @@ app.post('/api/notifications/test', notificationRoutes);
 app.post('/api/notifications/test-push', notificationRoutes);
 app.post('/api/notifications/check-now', notificationRoutes);
 app.get('/api/notifications/subscriptions', notificationRoutes);
+// Cron endpoints (no auth required for Vercel Cron Jobs and UptimeRobot)
+app.get('/api/notifications/cron/daily-check', notificationRoutes);
+app.post('/api/notifications/check-now', notificationRoutes);
 
 // Protected routes (authentication required)
-// You can add role-based authorization like: authenticate, authorize('admin', 'user')
 app.use('/api/vehicles', authenticate, require('./routes/vehicleRoutes'));
 app.use('/api/home-rents', authenticate, require('./routes/homeRentRoutes'));
 app.use('/api/electricity', authenticate, require('./routes/electricityRoutes'));
@@ -183,7 +186,7 @@ app.use((req, res) => {
   });
 });
 
-// Start server
+// Start server (only in local development, not on Vercel)
 const startServer = async () => {
   const PORT = process.env.PORT || 5000;
   try {
@@ -199,7 +202,7 @@ const startServer = async () => {
       // Start notification scheduler
       notificationScheduler.start();
     });
-    
+
     server.on('error', (err) => {
       console.error('Server error:', err);
       process.exit(1);
@@ -210,7 +213,16 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// Start server only if not running on Vercel
+if (process.env.VERCEL !== '1') {
+  startServer();
+} else {
+  // On Vercel, start the notification scheduler immediately
+  notificationScheduler.start();
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', handleUnhandledRejection);
+
+// Export the Express app for Vercel serverless
+module.exports = app;

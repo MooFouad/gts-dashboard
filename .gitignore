@@ -64,6 +64,8 @@ coverage/
 *.txt
 *.md
 *.bat
+*.claude
+*.bat
 
 # Allow project README if needed in future
 !README.md

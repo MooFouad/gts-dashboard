@@ -7,7 +7,7 @@ const authenticate = async (req, res, next) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return next(new AppError('No token provided. Please login.', 401));
     }
@@ -19,7 +19,7 @@ const authenticate = async (req, res, next) => {
 
     // Check if user still exists
     const user = await User.findById(decoded.userId);
-    
+
     if (!user) {
       return next(new AppError('User no longer exists.', 401));
     }

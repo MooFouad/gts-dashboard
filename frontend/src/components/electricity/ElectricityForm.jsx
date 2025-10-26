@@ -3,7 +3,7 @@ import FormField from '../common/FormField';
 import FormActions from '../common/FormActions';
 import AttachmentField from '../common/AttachmentField';
 
-const ElectricityForm = ({ onSubmit, onCancel, initialData = null }) => {
+const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null }) => {
   const [formData, setFormData] = useState({
     no: '',
     account: '',
@@ -20,8 +20,11 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null }) => {
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
+    } else if (nextNo) {
+      // Set auto-generated number for new items
+      setFormData(prev => ({ ...prev, no: nextNo.toString() }));
     }
-  }, [initialData]);
+  }, [initialData, nextNo]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -38,10 +41,14 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null }) => {
         <FormField label="No.">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
             value={formData.no}
             onChange={(e) => handleChange('no', e.target.value)}
+            readOnly
+            disabled
+            title="Auto-generated based on total count"
           />
+          <p className="text-xs text-gray-500 mt-1">Auto-generated</p>
         </FormField>
 
         <FormField label="Account">

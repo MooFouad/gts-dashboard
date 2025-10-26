@@ -95,4 +95,17 @@ router.delete('/:id', deleteHomeRentValidator, validate, async (req, res, next) 
   }
 });
 
+// GET count
+router.get('/count/total', async (req, res, next) => {
+  try {
+    const count = await HomeRent.countDocuments();
+    res.json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

@@ -33,18 +33,21 @@ services:
         value: ""
         # Leave empty for Brevo SMTP (recommended for Render)
         # Gmail SMTP port 587 is BLOCKED on Render free tier
+      - key: EMAIL_HOST
+        value: smtp-relay.brevo.com
+        # For Brevo SMTP relay (can override in Render Dashboard)
+      - key: EMAIL_PORT
+        value: 587
+        # Brevo SMTP port (can override in Render Dashboard)
+      - key: EMAIL_SECURE
+        sync: false
+        # Auto-detected based on port
       - key: EMAIL_USER
         sync: false
       - key: EMAIL_PASS
         sync: false
       - key: EMAIL_FROM
         sync: false
-      - key: EMAIL_HOST
-        value: smtp-relay.brevo.com
-        # For Brevo SMTP relay
-      - key: EMAIL_PORT
-        value: 587
-        # Brevo SMTP port
       - key: APP_URL
         sync: false
         # Set this to your Vercel frontend URL (e.g., https://your-app.vercel.app)
@@ -52,6 +55,8 @@ services:
         value: 10
       - key: NOTIFICATION_CHECK_HOUR
         value: 9
+      - key: TZ
+        value: Asia/Riyadh
       - key: TAMM_API_URL
         value: https://api.elm.sa
       - key: TAMM_AUTH_URL
