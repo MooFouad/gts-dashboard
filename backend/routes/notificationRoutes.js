@@ -184,10 +184,21 @@ router.post('/test-push', async (req, res) => {
   }
 });
 
-// Trigger notification check manually
+// Trigger notification check manually (supports both GET and POST)
+router.get('/check-now', async (req, res) => {
+  try {
+    console.log('🔍 Manual notification check triggered (GET)');
+    const result = await notificationService.sendAllNotifications();
+    res.json({ success: true, result });
+  } catch (error) {
+    console.error('Error checking notifications:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/check-now', async (req, res) => {
   try {
-    console.log('🔍 Manual notification check triggered');
+    console.log('🔍 Manual notification check triggered (POST)');
     const result = await notificationService.sendAllNotifications();
     res.json({ success: true, result });
   } catch (error) {

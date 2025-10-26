@@ -152,7 +152,8 @@ app.post('/api/notifications/unsubscribe', notificationRoutes);
 app.get('/api/notifications/vapid-public-key', notificationRoutes);
 app.post('/api/notifications/test', notificationRoutes);
 app.post('/api/notifications/test-push', notificationRoutes);
-app.post('/api/notifications/check-now', notificationRoutes);
+app.get('/api/notifications/check-now', notificationRoutes);  // GET method
+app.post('/api/notifications/check-now', notificationRoutes); // POST method
 app.get('/api/notifications/subscriptions', notificationRoutes);
 // Cron endpoints (no auth required for Vercel Cron Jobs and UptimeRobot)
 app.get('/api/notifications/cron/daily-check', notificationRoutes);
