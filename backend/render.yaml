@@ -16,6 +16,9 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+        # IMPORTANT: Set this in Render Dashboard to your Vercel frontend URL
+        # Example: https://your-app.vercel.app
+        # For multiple origins use comma-separated: https://app1.vercel.app,https://app2.com
       - key: JWT_SECRET
         sync: false
       - key: JWT_EXPIRES_IN
@@ -27,15 +30,24 @@ services:
       - key: VAPID_EMAIL
         sync: false
       - key: EMAIL_SERVICE
-        value: gmail
+        value: ""
+        # Leave empty for Brevo SMTP (recommended for Render)
+        # Gmail SMTP port 587 is BLOCKED on Render free tier
       - key: EMAIL_USER
         sync: false
       - key: EMAIL_PASS
         sync: false
       - key: EMAIL_FROM
         sync: false
+      - key: EMAIL_HOST
+        value: smtp-relay.brevo.com
+        # For Brevo SMTP relay
+      - key: EMAIL_PORT
+        value: 587
+        # Brevo SMTP port
       - key: APP_URL
         sync: false
+        # Set this to your Vercel frontend URL (e.g., https://your-app.vercel.app)
       - key: NOTIFICATION_DAYS_BEFORE
         value: 10
       - key: NOTIFICATION_CHECK_HOUR
