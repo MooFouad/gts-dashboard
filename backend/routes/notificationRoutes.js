@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const PushSubscription = require('../models/PushSubscription');
 const notificationService = require('../services/notificationService');
+const { authenticate } = require('../middleware/auth');
 
 // ========== CRON JOB ENDPOINT ==========
 // This endpoint can be called by UptimeRobot or cron-job.org daily at 9 AM
@@ -153,7 +154,7 @@ router.get('/vapid-public-key', (req, res) => {
 });
 
 // Manual trigger for testing EMAIL notifications
-router.post('/test', async (req, res) => {
+router.post('/test', authenticate, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -172,7 +173,7 @@ router.post('/test', async (req, res) => {
 });
 
 // Manual trigger for testing PUSH notifications (browser only, no email)
-router.post('/test-push', async (req, res) => {
+router.post('/test-push', authenticate, async (req, res) => {
   try {
     console.log('🧪 Sending test PUSH notification');
     await notificationService.sendTestPushNotification();
@@ -185,7 +186,7 @@ router.post('/test-push', async (req, res) => {
 });
 
 // Trigger notification check manually (supports both GET and POST)
-router.get('/check-now', async (req, res) => {
+router.get('/check-now', authenticate, async (req, res) => {
   try {
     console.log('🔍 Manual notification check triggered (GET)');
     const result = await notificationService.sendAllNotifications();
@@ -196,7 +197,7 @@ router.get('/check-now', async (req, res) => {
   }
 });
 
-router.post('/check-now', async (req, res) => {
+router.post('/check-now', authenticate, async (req, res) => {
   try {
     console.log('🔍 Manual notification check triggered (POST)');
     const result = await notificationService.sendAllNotifications();
@@ -208,7 +209,7 @@ router.post('/check-now', async (req, res) => {
 });
 
 // Update notification preferences
-router.post('/update-preferences', async (req, res) => {
+router.post('/update-preferences', authenticate, async (req, res) => {
   try {
     const { email, notificationTypes } = req.body;
 
@@ -247,7 +248,7 @@ router.post('/update-preferences', async (req, res) => {
 });
 
 // Get notification preferences for a user
-router.get('/preferences/:email', async (req, res) => {
+router.get('/preferences/:email', authenticate, async (req, res) => {
   try {
     const { email } = req.params;
 
@@ -271,7 +272,7 @@ router.get('/preferences/:email', async (req, res) => {
 });
 
 // Get all subscriptions (for debugging)
-router.get('/subscriptions', async (req, res) => {
+router.get('/subscriptions', authenticate, async (req, res) => {
   try {
     const subscriptions = await PushSubscription.find({}).select('-keys');
     res.json({
