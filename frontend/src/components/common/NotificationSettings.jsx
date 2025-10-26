@@ -227,6 +227,40 @@ const NotificationSettings = () => {
     }
   };
 
+  const handleCheckNow = async () => {
+    setLoading(true);
+    setMessage('');
+    addDebugLog('🔍 Triggering manual notification check...');
+
+    try {
+      addDebugLog('📋 Checking all vehicles, home rents, and electricity bills...');
+      const result = await api.post('/notifications/check-now');
+
+      addDebugLog(`✅ Check complete!`);
+      addDebugLog(`📊 Results:`);
+      addDebugLog(`   - Total items found: ${result.result.total}`);
+      addDebugLog(`   - Notifications sent: ${result.result.sent}`);
+      addDebugLog(`   - Push notifications: ${result.result.push}`);
+      addDebugLog(`   - Email notifications: ${result.result.email}`);
+
+      if (result.result.total === 0) {
+        setMessage('ℹ️ No items needing notification at this time (no items expiring within 10 days)');
+        addDebugLog('ℹ️ No items found expiring within 10 days');
+      } else if (result.result.email > 0) {
+        setMessage(`✅ Success! Sent ${result.result.total} notification(s). Check your email!`);
+        addDebugLog('📬 Check your email inbox (may take 1-2 minutes)');
+      } else {
+        setMessage(`⚠️ Found ${result.result.total} item(s) but no emails sent. Make sure you're subscribed!`);
+        addDebugLog('⚠️ No emails sent - you may need to subscribe first');
+      }
+    } catch (error) {
+      setMessage(`❌ Error: ${error.message}`);
+      addDebugLog(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRefresh = async () => {
     setLoading(true);
     setMessage('');
@@ -347,6 +381,16 @@ const NotificationSettings = () => {
             >
               <TestTube size={18} />
               Send Test
+            </button>
+
+            <button
+              onClick={handleCheckNow}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+              title="Check for real expiring items now (same as 9 AM daily check)"
+            >
+              <Bell size={18} />
+              Check Real Items Now
             </button>
 
             <button
