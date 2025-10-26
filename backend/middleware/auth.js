@@ -17,21 +17,7 @@ const authenticate = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Handle guest users
-    if (decoded.isGuest) {
-      req.user = {
-        _id: 'guest-user',
-        id: 'guest-user',
-        email: 'guest@demo.com',
-        name: 'Guest User',
-        role: 'guest',
-        isGuest: true,
-        isActive: true
-      };
-      return next();
-    }
-
-    // Check if regular user still exists
+    // Check if user still exists
     const user = await User.findById(decoded.userId);
 
     if (!user) {
@@ -71,19 +57,7 @@ const authorize = (...roles) => {
   };
 };
 
-// Middleware to block guest users from write operations
-const blockGuestWrites = (req, res, next) => {
-  if (req.user && req.user.isGuest) {
-    const method = req.method.toUpperCase();
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      return next(new AppError('Guest users cannot modify data. Please create an account or contact an administrator.', 403));
-    }
-  }
-  next();
-};
-
 module.exports = {
   authenticate,
-  authorize,
-  blockGuestWrites
+  authorize
 };

@@ -183,40 +183,4 @@ router.post('/logout', authenticate, async (req, res, next) => {
   }
 });
 
-// Guest/Demo Mode Login
-router.post('/guest', async (req, res, next) => {
-  try {
-    // Create a special guest token (doesn't require database user)
-    const guestUser = {
-      id: 'guest-user',
-      email: 'guest@demo.com',
-      name: 'Guest User',
-      role: 'guest',
-      isGuest: true
-    };
-
-    // Generate token with guest flag
-    const token = jwt.sign(
-      {
-        userId: 'guest-user',
-        isGuest: true,
-        role: 'guest'
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' } // Guest sessions expire in 24 hours
-    );
-
-    res.json({
-      success: true,
-      message: 'Logged in as guest',
-      data: {
-        user: guestUser,
-        token
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
 module.exports = router;
