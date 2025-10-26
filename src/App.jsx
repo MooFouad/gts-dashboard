@@ -12,6 +12,7 @@ import { mockVehicles } from './data/mockVehicles';
 import { mockHomeRents } from './data/mockHomeRents';
 import { mockElectricity } from './data/mockElectricity';
 import ElectricityContainer from './components/electricity/ElectricityContainer';
+import { loadSavedData } from './utils/storageUtils';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('vehicles');
@@ -43,12 +44,22 @@ const App = () => {
 
     window.addEventListener('itemCountUpdate', handleCountUpdate);
 
+    // Function to check notifications with current data from localStorage
+    const checkNotifications = () => {
+      const currentVehicles = loadSavedData('vehicle', mockVehicles);
+      const currentHomeRents = loadSavedData('homeRent', mockHomeRents);
+      const currentElectricity = loadSavedData('electricity', mockElectricity);
+
+      checkAndSendNotifications(currentVehicles, 'vehicle');
+      checkAndSendNotifications(currentHomeRents, 'homeRent');
+      checkAndSendNotifications(currentElectricity, 'electricity');
+    };
+
+    // Run initial notification check when app loads
+    checkNotifications();
+
     // التحقق من الإشعارات كل ساعة
-    const checkInterval = setInterval(() => {
-      checkAndSendNotifications(mockVehicles, 'vehicle');
-      checkAndSendNotifications(mockHomeRents, 'homeRent');
-      checkAndSendNotifications(mockElectricity, 'electricity');
-    }, 60 * 60 * 1000);
+    const checkInterval = setInterval(checkNotifications, 60 * 60 * 1000);
 
     return () => {
       window.removeEventListener('itemCountUpdate', handleCountUpdate);
