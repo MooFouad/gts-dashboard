@@ -3,12 +3,12 @@ const router = express.Router();
 const PushSubscription = require('../models/PushSubscription');
 const notificationService = require('../services/notificationService');
 
-// ========== VERCEL CRON JOB ENDPOINT ==========
-// This endpoint is called by Vercel Cron Jobs daily at 9 AM
-// To set up: Add cron configuration in vercel.json
+// ========== CRON JOB ENDPOINT ==========
+// This endpoint can be called by UptimeRobot or cron-job.org daily at 9 AM
+// For Render: Use UptimeRobot to keep service alive and trigger notifications
 router.get('/cron/daily-check', async (req, res) => {
   try {
-    // Verify request is from Vercel Cron (optional security check)
+    // Verify request with CRON_SECRET (optional security check)
     const authHeader = req.headers.authorization;
     const cronSecret = process.env.CRON_SECRET;
 
@@ -18,7 +18,7 @@ router.get('/cron/daily-check', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    console.log('\n⏰ ========== VERCEL CRON: DAILY NOTIFICATION CHECK ==========');
+    console.log('\n⏰ ========== CRON JOB: DAILY NOTIFICATION CHECK ==========');
     console.log(`Time: ${new Date().toLocaleString()}`);
 
     const result = await notificationService.sendAllNotifications();
