@@ -14,9 +14,11 @@ const AbsherContainer = () => {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState([]);
 
-  // Fetch data from Absher API on component mount
+  // Don't auto-fetch on mount - let user click the button
+  // This prevents immediate timeout errors when API is unavailable
   useEffect(() => {
-    fetchAbsherData();
+    // Optional: Load from local cache or show empty state
+    console.log('Absher tab loaded. Click "Refresh from Absher API" to fetch data.');
   }, []);
 
   // Fetch Absher data from API
@@ -39,23 +41,72 @@ const AbsherContainer = () => {
         }
       );
 
+      // Check if API is unreachable
+      if (!response.data.success && response.data.error === 'API_UNREACHABLE') {
+        console.error('❌ Absher API is unreachable');
+        alert(
+          `⚠️ Absher API Connection Failed\n\n` +
+          response.data.message
+        );
+        return;
+      }
+
       if (response.data.success) {
-        console.log('✅ Fetched Absher data:', response.data.data);
-        setItems(response.data.data);
-        alert(`Successfully fetched data for ${response.data.data.length} vehicles from Absher API!`);
+        const { data, summary } = response.data;
+        console.log('✅ Fetched Absher data:', data);
+
+        // Filter out error results for display
+        const successfulData = data.filter(item => item.status === 'success');
+        setItems(successfulData);
+
+        // Show summary
+        if (summary) {
+          const message =
+            `📊 Fetch Complete!\n\n` +
+            `✅ Successful: ${summary.successful}\n` +
+            `❌ Failed: ${summary.errors}\n` +
+            `⏱️ Timeouts: ${summary.timeouts}\n` +
+            `📦 Total: ${summary.total}\n\n` +
+            (summary.successful > 0
+              ? `Displaying ${successfulData.length} vehicles with data.`
+              : `No data was fetched. Please check your VPN/network connection.`);
+
+          alert(message);
+        } else {
+          alert(`Successfully fetched data for ${successfulData.length} vehicles from Absher API!`);
+        }
       }
     } catch (error) {
       console.error('Error fetching Absher data:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch from Absher API';
-      alert(`Error: ${errorMessage}`);
+
+      // Handle different error types
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        alert(
+          `⏱️ Request Timeout\n\n` +
+          `The request took too long to complete. This may be due to:\n` +
+          `• Slow network connection\n` +
+          `• Server overload\n` +
+          `• Large number of vehicles\n\n` +
+          `Please try again or contact support.`
+        );
+      } else if (error.response?.status === 503) {
+        alert(
+          `⚠️ Service Unavailable\n\n` +
+          (error.response.data.message || 'The Absher API service is currently unavailable.')
+        );
+      } else {
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch from Absher API';
+        alert(`❌ Error: ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const getEarliestExpiry = (record) => {
+    // Handle both date field names (API returns insuranceExpiryDate and inspectionExpiryDate)
     const dates = [
-      record.insuranceExpiryDate,
+      record.insuranceExpiryDate || record.expiryDate,
       record.inspectionExpiryDate
     ].filter(date => date);
 

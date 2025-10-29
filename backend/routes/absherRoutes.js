@@ -136,26 +136,66 @@ router.post('/fetch-from-api', async (req, res, next) => {
 
     console.log(`📊 Found ${vehicles.length} vehicles`);
 
-    const results = [];
+    if (vehicles.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No vehicles found to fetch data for',
+        data: []
+      });
+    }
 
-    // Fetch data for each vehicle from Absher API
-    for (const vehicle of vehicles) {
+    const results = [];
+    let successCount = 0;
+    let errorCount = 0;
+    let timeoutCount = 0;
+
+    // Test connection first to fail fast
+    console.log('🔌 Testing Absher API connection...');
+    try {
+      await absherService.generateAccessToken();
+      console.log('✅ Absher API connection successful');
+    } catch (error) {
+      console.error('❌ Absher API connection failed:', error.message);
+
+      // Check if it's a network/timeout issue
+      if (error.message.includes('ETIMEDOUT') || error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
+        return res.status(503).json({
+          success: false,
+          message: 'Absher API is currently unreachable. This may be due to:\n' +
+                   '• Network connectivity issues\n' +
+                   '• VPN requirement (server is in Saudi Arabia)\n' +
+                   '• IP whitelist restrictions\n' +
+                   '• Server maintenance\n\n' +
+                   'Please check your network connection or VPN access.',
+          error: 'API_UNREACHABLE',
+          details: error.message,
+          data: []
+        });
+      }
+
+      throw error;
+    }
+
+    // Fetch data for each vehicle from Absher API with timeout protection
+    for (let i = 0; i < vehicles.length; i++) {
+      const vehicle = vehicles[i];
+
       if (!vehicle.plateNumber) continue;
 
       try {
-        console.log(`📞 Fetching Absher data for: ${vehicle.plateNumber}`);
+        console.log(`📞 [${i + 1}/${vehicles.length}] Fetching Absher data for: ${vehicle.plateNumber}`);
 
-        // Fetch insurance data from Absher API
-        const insuranceData = await absherService.getVehicleInsuranceDetails(
-          vehicle.plateNumber,
-          vehicle.sequenceNumber
+        // Race against timeout for each vehicle (2 minutes max per vehicle)
+        const fetchPromise = Promise.all([
+          absherService.getVehicleInsuranceDetails(vehicle.plateNumber, vehicle.sequenceNumber),
+          absherService.getMVPIDetails(vehicle.plateNumber, vehicle.sequenceNumber)
+        ]);
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout after 2 minutes')), 120000)
         );
 
-        // Fetch MVPI data from Absher API
-        const mvpiData = await absherService.getMVPIDetails(
-          vehicle.plateNumber,
-          vehicle.sequenceNumber
-        );
+        const [insuranceData, mvpiData] = await Promise.race([fetchPromise, timeoutPromise]);
 
         // Add to results
         results.push({
@@ -164,30 +204,56 @@ router.post('/fetch-from-api', async (req, res, next) => {
           insuranceCompany: insuranceData?.insuranceCompany,
           insuranceExpiryDate: insuranceData?.insuranceExpiryDate,
           inspectionExpiryDate: mvpiData?.mvpiExpiryDate || mvpiData?.inspectionExpiryDate,
-          rawInsuranceData: insuranceData,
-          rawMvpiData: mvpiData
+          status: 'success'
         });
 
-        console.log(`✅ Got data for ${vehicle.plateNumber}`);
+        successCount++;
+        console.log(`✅ [${i + 1}/${vehicles.length}] Got data for ${vehicle.plateNumber}`);
 
         // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
 
       } catch (error) {
-        console.log(`⚠️ Could not fetch data for ${vehicle.plateNumber}: ${error.message}`);
+        const isTimeout = error.message.includes('timeout') || error.message.includes('ETIMEDOUT');
+
+        if (isTimeout) {
+          timeoutCount++;
+          console.log(`⏱️ [${i + 1}/${vehicles.length}] Timeout for ${vehicle.plateNumber}`);
+        } else {
+          errorCount++;
+          console.log(`⚠️ [${i + 1}/${vehicles.length}] Error for ${vehicle.plateNumber}: ${error.message}`);
+        }
+
         results.push({
           plateNumber: vehicle.plateNumber,
           name: vehicle.actualDriverName || vehicle.plateNumber,
-          error: error.message
+          error: isTimeout ? 'Timeout' : error.message,
+          status: 'error'
         });
+
+        // If too many consecutive failures, stop early
+        if (errorCount + timeoutCount >= 3 && successCount === 0) {
+          console.log('🛑 Stopping due to repeated failures - API appears to be unavailable');
+          break;
+        }
       }
     }
 
-    console.log(`✅ Fetched data for ${results.length} vehicles`);
+    console.log(`\n📊 Fetch Summary:`);
+    console.log(`   ✅ Success: ${successCount}`);
+    console.log(`   ❌ Errors: ${errorCount}`);
+    console.log(`   ⏱️ Timeouts: ${timeoutCount}`);
+    console.log(`   📦 Total: ${results.length}`);
 
     return res.json({
       success: true,
-      message: `Fetched Absher data for ${results.length} vehicles`,
+      message: `Fetched data for ${results.length} vehicles (${successCount} successful, ${errorCount + timeoutCount} failed)`,
+      summary: {
+        total: results.length,
+        successful: successCount,
+        errors: errorCount,
+        timeouts: timeoutCount
+      },
       data: results
     });
 
