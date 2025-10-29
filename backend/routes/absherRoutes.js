@@ -1,426 +1,660 @@
 const express = require('express');
 const router = express.Router();
-const Vehicle = require('../models/Vehicle');
-const AbsherConfig = require('../models/AbsherConfig');
-const absherService = require('../services/absherService');
+const Absher = require('../models/Absher');
 const { AppError } = require('../middleware/errorHandler');
+const absherService = require('../services/absherService');
 
-/**
- * Absher Routes
- * All configuration is read from environment variables for security
- * Only sync endpoints are exposed
- */
-
-/**
- * POST /api/absher/sync
- * Sync all vehicles from Absher API
- */
-router.post('/sync', async (req, res, next) => {
+// GET all absher records
+router.get('/', async (req, res, next) => {
   try {
-    console.log('\n🔄 Starting Absher sync...');
+    const absherRecords = await Absher.find({})
+      .lean()
+      .maxTimeMS(5000)
+      .exec();
 
-    // Get all vehicles that have plate number and sequence number
-    const vehicles = await Vehicle.find({
-      plateNumber: { $exists: true, $ne: '' },
-      sequenceNumber: { $exists: true, $ne: '' }
+    const formattedRecords = absherRecords.map(record => ({
+      ...record,
+      issueDate: record.issueDate ?
+        new Date(record.issueDate).toISOString().split('T')[0] : null,
+      expiryDate: record.expiryDate ?
+        new Date(record.expiryDate).toISOString().split('T')[0] : null,
+      inspectionExpiryDate: record.inspectionExpiryDate ?
+        new Date(record.inspectionExpiryDate).toISOString().split('T')[0] : null,
+      licenseExpiryDate: record.licenseExpiryDate ?
+        new Date(record.licenseExpiryDate).toISOString().split('T')[0] : null,
+    }));
+
+    res.json({
+      success: true,
+      count: absherRecords.length,
+      data: formattedRecords
     });
+  } catch (error) {
+    if (error.name === 'MongooseError' && error.message.includes('timed out')) {
+      return next(new AppError('Database operation timed out. Please try again.', 503));
+    }
+    next(error);
+  }
+});
+
+// GET single absher record
+router.get('/:id', async (req, res, next) => {
+  try {
+    const record = await Absher.findById(req.params.id);
+    if (!record) {
+      return next(new AppError('Absher record not found', 404));
+    }
+    res.json({
+      success: true,
+      data: record
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// CREATE absher record
+router.post('/', async (req, res, next) => {
+  try {
+    const record = new Absher(req.body);
+    await record.save();
+    res.status(201).json({
+      success: true,
+      message: 'Absher record created successfully',
+      data: record
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return next(new AppError('Duplicate reference number', 400));
+    }
+    next(error);
+  }
+});
+
+// UPDATE absher record
+router.put('/:id', async (req, res, next) => {
+  try {
+    const existingRecord = await Absher.findById(req.params.id);
+    if (!existingRecord) {
+      return next(new AppError('Absher record not found', 404));
+    }
+
+    const record = await Absher.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, _id: req.params.id },
+      { new: true, runValidators: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Absher record updated successfully',
+      data: record
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE absher record
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const record = await Absher.findByIdAndDelete(req.params.id);
+    if (!record) {
+      return next(new AppError('Absher record not found', 404));
+    }
+    res.json({
+      success: true,
+      message: 'Absher record deleted successfully',
+      data: { id: req.params.id }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET count
+router.get('/count/total', async (req, res, next) => {
+  try {
+    const count = await Absher.countDocuments();
+    res.json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// BULK SYNC ALL vehicles from Absher API (Government Data)
+router.post('/bulk-sync-from-api', async (req, res, next) => {
+  try {
+    console.log('🔄 Starting bulk sync from Absher API...');
+
+    // Import Vehicle model
+    const Vehicle = require('../models/Vehicle');
+
+    // Fetch all vehicles
+    const vehicles = await Vehicle.find({}).lean();
+    console.log(`📊 Found ${vehicles.length} vehicles to sync from API`);
 
     if (vehicles.length === 0) {
       return res.json({
         success: true,
         message: 'No vehicles found to sync',
-        data: { total: 0, successful: 0, failed: 0 }
+        data: {
+          synced: 0,
+          updated: 0,
+          created: 0,
+          skipped: 0,
+          failed: 0,
+          errors: []
+        }
       });
     }
 
-    console.log(`📋 Found ${vehicles.length} vehicles to sync`);
+    let synced = 0;
+    let updated = 0;
+    let created = 0;
+    let skipped = 0;
+    let failed = 0;
+    const errors = [];
+    const results = [];
 
-    // Sync all vehicles
-    const results = {
-      total: vehicles.length,
-      successful: 0,
-      failed: 0,
-      errors: [],
-      updated: []
-    };
-
+    // Process each vehicle
     for (const vehicle of vehicles) {
       try {
-        console.log(`\n🔍 Syncing: ${vehicle.plateNumber} (${vehicle.sequenceNumber})`);
+        // Skip if no plate number
+        if (!vehicle.plateNumber) {
+          console.log(`⏭️  Skipping vehicle without plate number: ${vehicle._id}`);
+          skipped++;
+          continue;
+        }
 
-        const absherData = await absherService.getVehicleInsuranceDetails(
-          vehicle.plateNumber,
-          vehicle.sequenceNumber
-        );
+        console.log(`\n🔍 Fetching data for: ${vehicle.plateNumber}`);
 
-        // Update vehicle with Absher data
-        Object.assign(vehicle, absherData);
-        await vehicle.save();
+        // Fetch insurance details from Absher API
+        let insuranceData = null;
+        try {
+          insuranceData = await absherService.getVehicleInsuranceDetails(
+            vehicle.plateNumber,
+            vehicle.sequenceNumber
+          );
+          console.log(`✅ Got insurance data for ${vehicle.plateNumber}`);
+        } catch (error) {
+          console.log(`⚠️  Could not fetch insurance for ${vehicle.plateNumber}: ${error.message}`);
+        }
 
-        results.successful++;
-        results.updated.push({
+        // Fetch MVPI details from Absher API
+        let mvpiData = null;
+        try {
+          mvpiData = await absherService.getMVPIDetails(
+            vehicle.plateNumber,
+            vehicle.sequenceNumber
+          );
+          console.log(`✅ Got MVPI data for ${vehicle.plateNumber}`);
+        } catch (error) {
+          console.log(`⚠️  Could not fetch MVPI for ${vehicle.plateNumber}: ${error.message}`);
+        }
+
+        // Skip if no data fetched from API
+        if (!insuranceData && !mvpiData) {
+          console.log(`❌ No data available from API for ${vehicle.plateNumber}`);
+          failed++;
+          errors.push({
+            plateNumber: vehicle.plateNumber,
+            error: 'No data returned from Absher API'
+          });
+          continue;
+        }
+
+        // Check if Absher record already exists
+        let absherRecord = await Absher.findOne({ plateNumber: vehicle.plateNumber });
+
+        // Prepare Absher data from API response
+        const absherData = {
           plateNumber: vehicle.plateNumber,
-          sequenceNumber: vehicle.sequenceNumber
+          name: vehicle.actualDriverName || vehicle.plateNumber,
+          referenceNumber: vehicle.sequenceNumber || vehicle.plateNumber,
+
+          // From Insurance API
+          expiryDate: insuranceData?.insuranceExpiryDate || null,
+          ownerName: vehicle.actualDriverName || '',
+          ownerId: vehicle.actualDriverId || '',
+
+          // From MVPI API
+          inspectionExpiryDate: mvpiData?.mvpiExpiryDate || null,
+
+          // Keep vehicle's license expiry if available
+          licenseExpiryDate: vehicle.licenseExpiryDate || null,
+
+          notes: `Synced from Absher API - ${vehicle.vehicleMaker || ''} ${vehicle.vehicleModel || ''} ${vehicle.modelYear || ''}`.trim(),
+          dataSource: 'absher',
+          lastSyncDate: new Date()
+        };
+
+        if (absherRecord) {
+          // Update existing record
+          absherRecord = await Absher.findByIdAndUpdate(
+            absherRecord._id,
+            absherData,
+            { new: true, runValidators: true }
+          );
+          console.log(`✅ Updated: ${vehicle.plateNumber}`);
+          updated++;
+        } else {
+          // Create new record
+          absherRecord = new Absher(absherData);
+          await absherRecord.save();
+          console.log(`✅ Created: ${vehicle.plateNumber}`);
+          created++;
+        }
+
+        synced++;
+        results.push({
+          plateNumber: vehicle.plateNumber,
+          status: 'success',
+          hasInsurance: !!insuranceData,
+          hasMVPI: !!mvpiData
         });
 
-        console.log(`✅ Successfully synced: ${vehicle.plateNumber}`);
-
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Add small delay between API calls to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
 
       } catch (error) {
-        console.error(`❌ Failed to sync vehicle ${vehicle.plateNumber}:`, error.message);
-        results.failed++;
-        results.errors.push({
+        console.error(`❌ Error syncing vehicle ${vehicle.plateNumber}:`, error.message);
+        failed++;
+        errors.push({
           plateNumber: vehicle.plateNumber,
-          sequenceNumber: vehicle.sequenceNumber,
           error: error.message
         });
       }
     }
 
-    console.log(`\n✅ Sync complete: ${results.successful}/${results.total} successful`);
-
-    // Return success even if some vehicles failed
-    // The client can check the results.failed count
-    res.json({
-      success: results.failed < results.total, // Success if at least one vehicle synced
-      message: results.successful > 0
-        ? `Sync complete: ${results.successful}/${results.total} vehicles updated`
-        : `Sync failed: All ${results.total} vehicles failed to sync. Check network connection and Absher API credentials.`,
-      data: results
-    });
-  } catch (error) {
-    console.error('❌ Error in sync:', error);
-
-    // Send proper error response instead of passing to error handler
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Sync failed',
-      error: {
-        message: error.message,
-        code: error.code,
-        details: error.response?.data || null
-      }
-    });
-  }
-});
-
-/**
- * POST /api/absher/sync/vehicle/:id
- * Sync a single vehicle from Absher API
- */
-router.post('/sync/vehicle/:id', async (req, res, next) => {
-  try {
-    const vehicle = await Vehicle.findById(req.params.id);
-
-    if (!vehicle) {
-      return next(new AppError('Vehicle not found', 404));
-    }
-
-    if (!vehicle.plateNumber || !vehicle.sequenceNumber) {
-      return next(new AppError('Vehicle must have plate number and sequence number to sync', 400));
-    }
-
-    console.log(`🔄 Syncing vehicle: ${vehicle.plateNumber}`);
-
-    const absherData = await absherService.getVehicleInsuranceDetails(
-      vehicle.plateNumber,
-      vehicle.sequenceNumber
-    );
-
-    // Update vehicle with Absher data
-    Object.assign(vehicle, absherData);
-    await vehicle.save();
-
-    console.log(`✅ Vehicle synced successfully: ${vehicle.plateNumber}`);
+    console.log(`\n✅ Bulk API sync complete:`);
+    console.log(`   Total vehicles: ${vehicles.length}`);
+    console.log(`   Successfully synced: ${synced}`);
+    console.log(`   Created: ${created}`);
+    console.log(`   Updated: ${updated}`);
+    console.log(`   Skipped: ${skipped}`);
+    console.log(`   Failed: ${failed}`);
+    console.log(`   Errors: ${errors.length}`);
 
     res.json({
       success: true,
-      message: 'Vehicle synced successfully',
-      data: vehicle
-    });
-  } catch (error) {
-    console.error('❌ Error syncing vehicle:', error);
-    next(error);
-  }
-});
-
-/**
- * POST /api/absher/test-connection
- * Test connection to Absher API
- */
-router.post('/test-connection', async (req, res, next) => {
-  try {
-    console.log('🧪 Testing Absher API connection...');
-
-    const result = await absherService.testConnection();
-
-    res.json({
-      success: result.success,
-      message: result.message,
-      data: result
-    });
-  } catch (error) {
-    console.error('❌ Connection test failed:', error);
-    next(error);
-  }
-});
-
-/**
- * POST /api/absher/istemarah/request-renewal
- * Request Istemarah (Vehicle Registration) Renewal
- */
-router.post('/istemarah/request-renewal', async (req, res, next) => {
-  try {
-    const { plateNumber, sequenceNumber, additionalData } = req.body;
-
-    if (!plateNumber || !sequenceNumber) {
-      return next(new AppError('Plate number and sequence number are required', 400));
-    }
-
-    console.log(`🔄 Requesting Istemarah renewal for: ${plateNumber} (${sequenceNumber})`);
-
-    const renewalData = await absherService.requestIstemarahRenewal(
-      plateNumber,
-      sequenceNumber,
-      additionalData
-    );
-
-    res.json({
-      success: true,
-      message: 'Istemarah renewal request submitted successfully',
-      data: renewalData
-    });
-  } catch (error) {
-    console.error('❌ Error requesting Istemarah renewal:', error);
-    next(error);
-  }
-});
-
-/**
- * POST /api/absher/istemarah/renewal-details
- * Get Istemarah Renewal Details
- */
-router.post('/istemarah/renewal-details', async (req, res, next) => {
-  try {
-    const { plateNumber, sequenceNumber } = req.body;
-
-    if (!plateNumber || !sequenceNumber) {
-      return next(new AppError('Plate number and sequence number are required', 400));
-    }
-
-    console.log(`🔍 Fetching Istemarah renewal details for: ${plateNumber} (${sequenceNumber})`);
-
-    const details = await absherService.getIstemarahRenewalDetails(
-      plateNumber,
-      sequenceNumber
-    );
-
-    res.json({
-      success: true,
-      message: 'Istemarah renewal details retrieved successfully',
-      data: details
-    });
-  } catch (error) {
-    console.error('❌ Error fetching Istemarah renewal details:', error);
-    next(error);
-  }
-});
-
-/**
- * POST /api/absher/istemarah/renew-vehicle/:id
- * Request Istemarah renewal for a specific vehicle by ID
- */
-router.post('/istemarah/renew-vehicle/:id', async (req, res, next) => {
-  try {
-    const vehicle = await Vehicle.findById(req.params.id);
-
-    if (!vehicle) {
-      return next(new AppError('Vehicle not found', 404));
-    }
-
-    if (!vehicle.plateNumber || !vehicle.sequenceNumber) {
-      return next(new AppError('Vehicle must have plate number and sequence number', 400));
-    }
-
-    console.log(`🔄 Requesting Istemarah renewal for vehicle: ${vehicle.plateNumber}`);
-
-    const renewalData = await absherService.requestIstemarahRenewal(
-      vehicle.plateNumber,
-      vehicle.sequenceNumber,
-      req.body.additionalData || {}
-    );
-
-    // Update vehicle with renewal data
-    vehicle.renewalRequestId = renewalData.renewalRequestId;
-    vehicle.renewalStatus = renewalData.renewalStatus;
-    vehicle.renewalFees = renewalData.renewalFees;
-    vehicle.lastRenewalRequestDate = new Date();
-    await vehicle.save();
-
-    console.log(`✅ Istemarah renewal requested for vehicle: ${vehicle.plateNumber}`);
-
-    res.json({
-      success: true,
-      message: 'Istemarah renewal request submitted successfully',
+      message: `Successfully synced ${synced} vehicles from Absher API`,
       data: {
-        vehicle: vehicle,
-        renewal: renewalData
+        total: vehicles.length,
+        synced,
+        updated,
+        created,
+        skipped,
+        failed,
+        errors,
+        results
       }
     });
+
   } catch (error) {
-    console.error('❌ Error requesting Istemarah renewal:', error);
-    next(error);
+    console.error('❌ Error in bulk API sync:', error);
+    next(new AppError(`Bulk API sync failed: ${error.message}`, 500));
   }
 });
 
-/**
- * GET /api/absher/config
- * Get Absher configuration
- */
-router.get('/config', async (req, res, next) => {
+// SYNC ALL vehicles from Vehicles collection to Absher
+router.post('/sync-all-from-vehicles', async (req, res, next) => {
   try {
-    const config = await AbsherConfig.findOne({ status: 'active' });
+    console.log('🔄 Starting bulk sync from Vehicles collection to Absher...');
 
-    if (!config) {
-      // Return default configuration from environment variables
+    // Import Vehicle model
+    const Vehicle = require('../models/Vehicle');
+
+    // Fetch all vehicles
+    const vehicles = await Vehicle.find({}).lean();
+    console.log(`📊 Found ${vehicles.length} vehicles to sync`);
+
+    if (vehicles.length === 0) {
       return res.json({
         success: true,
+        message: 'No vehicles found to sync',
         data: {
-          clientId: process.env.TAMM_CLIENT_ID || '3fd125a2',
-          authorizationServer: process.env.TAMM_AUTH_URL?.replace('/auth/realms/Tamm-QA/protocol/openid-connect/token', '') || 'https://idp.apps.devocp4.elm.sa',
-          realmName: process.env.TAMM_REALM_NAME || 'Tamm-QA',
-          status: 'active'
+          synced: 0,
+          updated: 0,
+          created: 0,
+          skipped: 0,
+          errors: []
         }
       });
     }
 
+    let synced = 0;
+    let updated = 0;
+    let created = 0;
+    let skipped = 0;
+    const errors = [];
+
+    // Process each vehicle
+    for (const vehicle of vehicles) {
+      try {
+        // Skip if no plate number
+        if (!vehicle.plateNumber) {
+          console.log(`⏭️  Skipping vehicle without plate number: ${vehicle._id}`);
+          skipped++;
+          continue;
+        }
+
+        // Check if Absher record already exists
+        let absherRecord = await Absher.findOne({ plateNumber: vehicle.plateNumber });
+
+        const absherData = {
+          plateNumber: vehicle.plateNumber,
+          name: vehicle.actualDriverName || vehicle.plateNumber,
+          referenceNumber: vehicle.sequenceNumber || vehicle.plateNumber,
+          issueDate: vehicle.registrationDate || null,
+          expiryDate: vehicle.insuranceExpiryDate || null,
+          inspectionExpiryDate: vehicle.inspectionExpiryDate || null,
+          licenseExpiryDate: vehicle.licenseExpiryDate || null,
+          ownerName: vehicle.actualDriverName || '',
+          ownerId: vehicle.actualDriverId || '',
+          notes: `Synced from Vehicles - ${vehicle.vehicleMaker} ${vehicle.vehicleModel} ${vehicle.modelYear || ''}`,
+          dataSource: 'vehicles',
+          lastSyncDate: new Date()
+        };
+
+        if (absherRecord) {
+          // Update existing record
+          absherRecord = await Absher.findByIdAndUpdate(
+            absherRecord._id,
+            absherData,
+            { new: true, runValidators: true }
+          );
+          console.log(`✅ Updated: ${vehicle.plateNumber}`);
+          updated++;
+        } else {
+          // Create new record
+          absherRecord = new Absher(absherData);
+          await absherRecord.save();
+          console.log(`✅ Created: ${vehicle.plateNumber}`);
+          created++;
+        }
+
+        synced++;
+
+      } catch (error) {
+        console.error(`❌ Error syncing vehicle ${vehicle.plateNumber}:`, error.message);
+        errors.push({
+          plateNumber: vehicle.plateNumber,
+          error: error.message
+        });
+      }
+    }
+
+    console.log(`\n✅ Bulk sync complete:`);
+    console.log(`   Total processed: ${synced}/${vehicles.length}`);
+    console.log(`   Created: ${created}`);
+    console.log(`   Updated: ${updated}`);
+    console.log(`   Skipped: ${skipped}`);
+    console.log(`   Errors: ${errors.length}`);
+
     res.json({
       success: true,
-      data: config
+      message: `Successfully synced ${synced} vehicles to Absher`,
+      data: {
+        total: vehicles.length,
+        synced,
+        updated,
+        created,
+        skipped,
+        errors
+      }
     });
+
   } catch (error) {
-    console.error('Get config error:', error);
-    next(error);
+    console.error('❌ Error in bulk sync:', error);
+    next(new AppError(`Bulk sync failed: ${error.message}`, 500));
   }
 });
 
-/**
- * GET /api/absher/config/full
- * Get full Absher configuration (including sensitive data - masked)
- */
-router.get('/config/full', async (req, res, next) => {
+// SYNC vehicle insurance details from Absher API
+router.post('/sync', async (req, res, next) => {
   try {
-    const config = await AbsherConfig.findOne({ status: 'active' });
+    const { plateNumber, sequenceNumber, referenceNumber, name } = req.body;
 
-    if (!config) {
-      return res.json({
-        success: true,
-        data: null
-      });
+    if (!plateNumber) {
+      return next(new AppError('Plate number is required', 400));
     }
 
-    // Mask the client secret for security
-    const configData = config.toObject();
-    if (configData.clientSecret) {
-      configData.clientSecret = '••••••••' + configData.clientSecret.slice(-4);
+    console.log('🔄 Starting Absher API sync for:', plateNumber);
+
+    // Fetch insurance details from Absher API
+    const insuranceData = await absherService.getVehicleInsuranceDetails(plateNumber, sequenceNumber);
+
+    if (!insuranceData) {
+      return next(new AppError('No data returned from Absher API', 500));
     }
 
-    res.json({
-      success: true,
-      data: configData
-    });
-  } catch (error) {
-    console.error('Get full config error:', error);
-    next(error);
-  }
-});
+    // Check if record already exists by plate number
+    let existingRecord = await Absher.findOne({ plateNumber: insuranceData.plateNumber });
 
-/**
- * POST /api/absher/config
- * Save Absher configuration
- */
-router.post('/config', async (req, res, next) => {
-  try {
-    const { clientId, clientSecret, authorizationServer, realmName, linkId, status, notes } = req.body;
-
-    // Check if configuration already exists
-    let config = await AbsherConfig.findOne({ status: 'active' });
-
-    const configData = {
-      clientId: clientId || '3fd125a2',
-      clientSecret: clientSecret || process.env.TAMM_CLIENT_SECRET,
-      authorizationServer: authorizationServer || 'https://idp.apps.devocp4.elm.sa',
-      realmName: realmName || 'Tamm-QA',
-      linkId: linkId || clientId,
-      status: status || 'active',
-      notes: notes || '',
-      lastUpdated: new Date()
-    };
-
-    if (config) {
-      // Update existing configuration
-      config = await AbsherConfig.findByIdAndUpdate(
-        config._id,
-        configData,
-        { new: true }
+    let record;
+    if (existingRecord) {
+      // Update existing record
+      record = await Absher.findByIdAndUpdate(
+        existingRecord._id,
+        {
+          plateNumber: insuranceData.plateNumber,
+          name: name || existingRecord.name,
+          referenceNumber: referenceNumber || sequenceNumber || existingRecord.referenceNumber,
+          inspectionExpiryDate: insuranceData.inspectionExpiryDate || existingRecord.inspectionExpiryDate,
+          licenseExpiryDate: insuranceData.licenseExpiryDate || existingRecord.licenseExpiryDate,
+          expiryDate: insuranceData.insuranceExpiryDate || existingRecord.expiryDate,
+          dataSource: 'absher',
+          lastSyncDate: new Date()
+        },
+        { new: true, runValidators: true }
       );
+
+      console.log('✅ Updated existing Absher record:', record._id);
     } else {
-      // Create new configuration
-      config = await AbsherConfig.create(configData);
+      // Create new record
+      record = new Absher({
+        plateNumber: insuranceData.plateNumber,
+        name: name || plateNumber,
+        referenceNumber: referenceNumber || sequenceNumber || plateNumber,
+        expiryDate: insuranceData.insuranceExpiryDate,
+        inspectionExpiryDate: insuranceData.inspectionExpiryDate,
+        licenseExpiryDate: insuranceData.licenseExpiryDate,
+        dataSource: 'absher',
+        lastSyncDate: new Date()
+      });
+
+      await record.save();
+      console.log('✅ Created new Absher record:', record._id);
     }
-
-    console.log('✅ Absher configuration saved successfully');
-
-    // Reload the service configuration
-    await absherService.reloadConfig();
-    console.log('✅ Absher service configuration reloaded');
 
     res.json({
       success: true,
-      message: 'Configuration saved successfully',
-      data: config
+      message: 'Successfully synced with Absher API',
+      data: {
+        record: record,
+        apiResponse: insuranceData
+      }
     });
+
   } catch (error) {
-    console.error('Save config error:', error);
-    next(error);
+    console.error('❌ Error syncing with Absher API:', error);
+
+    if (error.message.includes('TAMM configuration')) {
+      return next(new AppError('Absher API is not configured. Please check your .env settings.', 500));
+    }
+
+    if (error.message.includes('Failed to authenticate')) {
+      return next(new AppError('Failed to authenticate with Absher API. Please check your credentials.', 500));
+    }
+
+    next(new AppError(`Absher API sync failed: ${error.message}`, 500));
   }
 });
 
-/**
- * PUT /api/absher/config/:id
- * Update Absher configuration
- */
-router.put('/config/:id', async (req, res, next) => {
+// GET vehicle insurance details from Absher API
+router.post('/insurance-inquiry', async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const updates = req.body;
+    const { plateNumber, sequenceNumber } = req.body;
 
-    const config = await AbsherConfig.findByIdAndUpdate(
-      id,
-      { ...updates, lastUpdated: new Date() },
-      { new: true }
+    if (!plateNumber && !sequenceNumber) {
+      return next(new AppError('Plate number or sequence number is required', 400));
+    }
+
+    console.log('🔍 Fetching insurance details from Absher API');
+
+    const insuranceData = await absherService.getVehicleInsuranceDetails(plateNumber, sequenceNumber);
+
+    res.json({
+      success: true,
+      message: 'Successfully fetched insurance details',
+      data: insuranceData
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching insurance details:', error);
+    next(new AppError(`Failed to fetch insurance details: ${error.message}`, 500));
+  }
+});
+
+// GET vehicle MVPI details from Absher API
+router.post('/mvpi-inquiry', async (req, res, next) => {
+  try {
+    const { plateNumber, sequenceNumber } = req.body;
+
+    if (!plateNumber && !sequenceNumber) {
+      return next(new AppError('Plate number or sequence number is required', 400));
+    }
+
+    console.log('🔍 Fetching MVPI details from Absher API');
+
+    const mvpiData = await absherService.getMVPIDetails(plateNumber, sequenceNumber);
+
+    res.json({
+      success: true,
+      message: 'Successfully fetched MVPI details',
+      data: mvpiData
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching MVPI details:', error);
+    next(new AppError(`Failed to fetch MVPI details: ${error.message}`, 500));
+  }
+});
+
+// STEP 1: Verify vehicle for Istemarah renewal
+router.post('/istemarah/verify', async (req, res, next) => {
+  try {
+    const { plateNumber } = req.body;
+
+    if (!plateNumber) {
+      return next(new AppError('Plate number is required', 400));
+    }
+
+    console.log('🔍 Verifying vehicle for Istemarah renewal');
+
+    const verifyResult = await absherService.verifyIstemarahRenewal(plateNumber);
+
+    res.json({
+      success: true,
+      message: 'Vehicle verified successfully',
+      data: verifyResult
+    });
+
+  } catch (error) {
+    console.error('❌ Error verifying vehicle:', error);
+    next(new AppError(`Failed to verify vehicle: ${error.message}`, 500));
+  }
+});
+
+// STEP 2: Submit Istemarah renewal
+router.post('/istemarah/submit', async (req, res, next) => {
+  try {
+    const { conversationId, ownerMobileNumber, integratorUserId } = req.body;
+
+    if (!conversationId || !ownerMobileNumber) {
+      return next(new AppError('Conversation ID and mobile number are required', 400));
+    }
+
+    console.log('🔄 Submitting Istemarah renewal');
+
+    const submitResult = await absherService.submitIstemarahRenewal(
+      conversationId,
+      ownerMobileNumber,
+      integratorUserId
     );
 
-    if (!config) {
-      return next(new AppError('Configuration not found', 404));
+    res.json({
+      success: true,
+      message: 'Istemarah renewal submitted successfully',
+      data: submitResult
+    });
+
+  } catch (error) {
+    console.error('❌ Error submitting renewal:', error);
+    next(new AppError(`Failed to submit renewal: ${error.message}`, 500));
+  }
+});
+
+// STEP 3: Search renewed Istemarah records
+router.post('/istemarah/search', async (req, res, next) => {
+  try {
+    const { plateInfo, integratorUserId, page = 0, size = 10 } = req.body;
+
+    if (!plateInfo || !integratorUserId) {
+      return next(new AppError('Plate info and integrator user ID are required', 400));
     }
 
-    console.log('✅ Absher configuration updated successfully');
+    console.log('🔍 Searching renewed Istemarah records');
 
-    // Reload the service configuration
-    await absherService.reloadConfig();
-    console.log('✅ Absher service configuration reloaded');
+    const searchResult = await absherService.searchRenewedIstemarah(
+      plateInfo,
+      integratorUserId,
+      page,
+      size
+    );
 
     res.json({
       success: true,
-      message: 'Configuration updated successfully',
-      data: config
+      message: 'Search completed successfully',
+      data: searchResult
     });
+
   } catch (error) {
-    console.error('Update config error:', error);
-    next(error);
+    console.error('❌ Error searching renewed records:', error);
+    next(new AppError(`Failed to search renewed records: ${error.message}`, 500));
+  }
+});
+
+// Complete Istemarah renewal workflow (all 3 steps)
+router.post('/istemarah/renew-complete', async (req, res, next) => {
+  try {
+    const { plateNumber, ownerMobileNumber, integratorUserId } = req.body;
+
+    if (!plateNumber || !ownerMobileNumber) {
+      return next(new AppError('Plate number and mobile number are required', 400));
+    }
+
+    console.log('🔄 Starting complete Istemarah renewal workflow');
+
+    const result = await absherService.completeIstemarahRenewal(
+      plateNumber,
+      ownerMobileNumber,
+      integratorUserId
+    );
+
+    res.json({
+      success: true,
+      message: 'Istemarah renewal completed successfully',
+      data: result
+    });
+
+  } catch (error) {
+    console.error('❌ Error completing renewal workflow:', error);
+    next(new AppError(`Failed to complete renewal: ${error.message}`, 500));
   }
 });
 

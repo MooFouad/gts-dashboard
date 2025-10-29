@@ -111,10 +111,10 @@ class TammService {
   }
 
   /**
-   * Generate Access Token from TAMM API
+   * Generate Access Token from TAMM API with retry logic
    * POST /auth/realms/Tamm-QA/protocol/openid-connect/token
    */
-  async generateAccessToken() {
+  async generateAccessToken(retryCount = 0) {
     try {
       const config = await this.getConfig();
 
@@ -126,6 +126,9 @@ class TammService {
 
       console.log('🔄 Generating new TAMM access token...');
       console.log('🔗 Auth URL:', config.authUrl);
+      if (retryCount > 0) {
+        console.log(`🔄 Retry attempt ${retryCount}/3`);
+      }
 
       const params = new URLSearchParams();
       params.append('client_id', config.clientId);
@@ -136,7 +139,7 @@ class TammService {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
-        timeout: 10000 // Reduced timeout to 10 seconds
+        timeout: 30000 // Increased timeout to 30 seconds
       });
 
       if (response.data && response.data.access_token) {
@@ -155,6 +158,14 @@ class TammService {
       }
     } catch (error) {
       console.error('❌ Error generating access token:', error.message);
+
+      // Retry logic for timeout errors
+      if ((error.code === 'ECONNABORTED' || error.message.includes('timeout')) && retryCount < 3) {
+        console.log(`⏳ Timeout occurred, waiting ${(retryCount + 1) * 2} seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+        return this.generateAccessToken(retryCount + 1);
+      }
+
       if (error.response) {
         console.error('Response data:', error.response.data);
         console.error('Response status:', error.response.status);
@@ -252,7 +263,7 @@ class TammService {
 
       const response = await axios.post(apiUrl, plateData, {
         headers: headers,
-        timeout: 10000 // Reduced timeout to 10 seconds
+        timeout: 30000 // Increased timeout to 30 seconds
       });
 
       console.log(`✅ Response received from Absher API`);
@@ -384,7 +395,7 @@ class TammService {
 
       const response = await axios.post(apiUrl, plateData, {
         headers: headers,
-        timeout: 10000 // Reduced timeout to 10 seconds
+        timeout: 30000 // Increased timeout to 30 seconds
       });
 
       console.log(`✅ Response received from Absher API`);
@@ -416,59 +427,52 @@ class TammService {
   }
 
   /**
-   * Request Istemarah (Vehicle Registration) Renewal
-   * POST /api/v1/request/istemarah-renewal
+   * STEP 1: Verify Vehicle for Istemarah Renewal
+   * POST /api/v1/istemarah/renewal/verify
+   * Returns conversationId needed for step 2
    * @param {Object} plateNumber - Vehicle plate number (can be string or object)
-   * @param {string} sequenceNumber - Vehicle sequence number
-   * @param {Object} additionalData - Additional data for renewal request (optional)
    */
-  async requestIstemarahRenewal(plateNumber, sequenceNumber, additionalData = {}) {
+  async verifyIstemarahRenewal(plateNumber) {
     try {
       console.log('\n' + '='.repeat(80));
-      console.log(`🔄 ABSHER API CALL - Requesting Istemarah Renewal`);
+      console.log(`🔄 ABSHER API CALL - Step 1: Verify Vehicle for Istemarah Renewal`);
       console.log('='.repeat(80));
       console.log(`📋 Input Plate Number: ${JSON.stringify(plateNumber)}`);
-      console.log(`📋 Input Sequence Number: ${sequenceNumber}`);
 
       const config = await this.getConfig();
       const accessToken = await this.generateAccessToken();
 
-      // TAMM API endpoint for Istemarah renewal
-      const apiUrl = `${config.apiUrl}/api/v1/request/istemarah-renewal`;
+      // TAMM API endpoint for Istemarah renewal verification
+      const apiUrl = `${config.apiUrl}/api/v1/istemarah/renewal/verify`;
 
       // Prepare plate object based on the documentation
-      let plateData;
+      let plateDto;
       if (typeof plateNumber === 'string') {
         const parts = plateNumber.trim().split(/\s+/);
         if (parts.length >= 4) {
-          plateData = {
-            plate: {
-              text1: parts[0],
-              text2: parts[1],
-              text3: parts[2],
-              number: parseInt(parts[3]) || parts[3]
-            },
-            sequenceNumber: sequenceNumber,
-            ...additionalData
+          plateDto = {
+            text1: parts[0],
+            text2: parts[1],
+            text3: parts[2],
+            number: parseInt(parts[3]) || parts[3],
+            type: {
+              code: 1
+            }
           };
         } else {
-          plateData = {
-            plate: plateNumber,
-            sequenceNumber: sequenceNumber,
-            ...additionalData
-          };
+          throw new Error('Invalid plate number format. Expected format: "text1 text2 text3 number"');
         }
       } else {
-        plateData = {
-          plate: plateNumber,
-          sequenceNumber: sequenceNumber,
-          ...additionalData
-        };
+        plateDto = plateNumber;
       }
 
+      const requestBody = {
+        plateDto: plateDto
+      };
+
       console.log(`📤 API URL: ${apiUrl}`);
-      console.log(`📦 Request Body:`, JSON.stringify(plateData, null, 2));
-      console.log(`🚀 Sending Istemarah renewal request to Absher API...`);
+      console.log(`📦 Request Body:`, JSON.stringify(requestBody, null, 2));
+      console.log(`🚀 Sending verification request to Absher API...`);
 
       const headers = {
         'Authorization': `Bearer ${accessToken}`,
@@ -478,49 +482,49 @@ class TammService {
       // Add subscription key if available
       if (config.subscriptionKey) {
         headers['Ocp-Apim-Subscription-Key'] = config.subscriptionKey;
-        console.log(`🔑 Using Subscription Key: ${config.subscriptionKey.substring(0, 8)}...`);
       }
 
-      const response = await axios.post(apiUrl, plateData, {
+      const response = await axios.post(apiUrl, requestBody, {
         headers: headers,
-        timeout: 10000 // Reduced timeout to 10 seconds
+        timeout: 30000 // Increased timeout to 30 seconds
       });
 
       console.log(`✅ Response received from Absher API`);
       console.log(`📊 Response Status: ${response.status}`);
-      console.log(`📦 Response Headers:`, JSON.stringify(response.headers, null, 2));
 
       if (response.data) {
-        console.log(`✅ Successfully submitted Istemarah renewal request`);
+        console.log(`✅ Successfully verified vehicle for renewal`);
         console.log('📦 RAW ABSHER API RESPONSE:');
         console.log('='.repeat(80));
         console.log(JSON.stringify(response.data, null, 2));
-        console.log('='.repeat(80));
-
-        const parsedData = this.parseIstemarahRenewalResponse(response.data, plateNumber, sequenceNumber);
-        console.log('📋 PARSED RENEWAL DATA:');
-        console.log(JSON.stringify(parsedData, null, 2));
         console.log('='.repeat(80) + '\n');
 
-        return parsedData;
+        // Extract conversationId for next step
+        const conversationId = response.data.id || response.data.conversationId;
+        if (!conversationId) {
+          throw new Error('No conversationId returned from verification API');
+        }
+
+        return {
+          conversationId: conversationId,
+          vehicleInfo: response.data.vehicleDtoView,
+          ownerIdNumber: response.data.ownerIdNumber,
+          ownerName: response.data.ownerName,
+          price: response.data.price,
+          rawResponse: response.data
+        };
       } else {
         throw new Error('Empty response from TAMM API');
       }
     } catch (error) {
       console.error('\n' + '❌'.repeat(40));
-      console.error(`❌ ERROR REQUESTING ISTEMARAH RENEWAL`);
+      console.error(`❌ ERROR VERIFYING VEHICLE FOR RENEWAL`);
       console.error('❌'.repeat(40));
       console.error(`Error Message: ${error.message}`);
 
       if (error.response) {
         console.error(`Response Status: ${error.response.status}`);
-        console.error(`Response Headers:`, JSON.stringify(error.response.headers, null, 2));
         console.error(`Response Data:`, JSON.stringify(error.response.data, null, 2));
-      } else if (error.request) {
-        console.error(`Request was made but no response received`);
-        console.error(`Request details:`, error.request);
-      } else {
-        console.error(`Error details:`, error);
       }
       console.error('❌'.repeat(40) + '\n');
       throw error;
@@ -528,59 +532,127 @@ class TammService {
   }
 
   /**
-   * Get Istemarah (Vehicle Registration) Renewal Details
-   * POST /api/v1/inquiry/istemarah-renewal-details
-   * @param {Object} plateNumber - Vehicle plate number (can be string or object)
-   * @param {string} sequenceNumber - Vehicle sequence number
+   * STEP 2: Submit Istemarah Renewal
+   * POST /api/v1/istemarah/renewal/
+   * Requires conversationId from step 1
+   * @param {string} conversationId - Conversation ID from verify step
+   * @param {string} ownerMobileNumber - Owner's mobile number
+   * @param {string} integratorUserId - Integrator user ID (optional)
    */
-  async getIstemarahRenewalDetails(plateNumber, sequenceNumber) {
+  async submitIstemarahRenewal(conversationId, ownerMobileNumber, integratorUserId = null) {
     try {
       console.log('\n' + '='.repeat(80));
-      console.log(`🔍 ABSHER API CALL - Fetching Istemarah Renewal Details`);
+      console.log(`🔄 ABSHER API CALL - Step 2: Submit Istemarah Renewal`);
       console.log('='.repeat(80));
-      console.log(`📋 Input Plate Number: ${JSON.stringify(plateNumber)}`);
-      console.log(`📋 Input Sequence Number: ${sequenceNumber}`);
+      console.log(`📋 Conversation ID: ${conversationId}`);
+      console.log(`📋 Mobile Number: ${ownerMobileNumber}`);
 
       const config = await this.getConfig();
       const accessToken = await this.generateAccessToken();
 
-      // TAMM API endpoint for Istemarah renewal details
-      const apiUrl = `${config.apiUrl}/api/v1/inquiry/istemarah-renewal-details`;
+      // TAMM API endpoint for Istemarah renewal submission
+      const apiUrl = `${config.apiUrl}/api/v1/istemarah/renewal/`;
 
-      // Prepare plate object
-      let plateData;
-      if (typeof plateNumber === 'string') {
-        const parts = plateNumber.trim().split(/\s+/);
-        if (parts.length >= 4) {
-          plateData = {
-            plate: {
-              text1: parts[0],
-              text2: parts[1],
-              text3: parts[2],
-              number: parseInt(parts[3]) || parts[3]
-            },
-            sequenceNumber: sequenceNumber
-          };
-        } else {
-          plateData = {
-            plate: plateNumber,
-            sequenceNumber: sequenceNumber
-          };
-        }
-      } else {
-        plateData = {
-          plate: plateNumber,
-          sequenceNumber: sequenceNumber
-        };
-      }
+      const requestBody = {
+        ownerMobileNumber: ownerMobileNumber
+      };
 
       console.log(`📤 API URL: ${apiUrl}`);
-      console.log(`📦 Request Body:`, JSON.stringify(plateData, null, 2));
-      console.log(`🚀 Sending request to Absher API...`);
+      console.log(`📦 Request Body:`, JSON.stringify(requestBody, null, 2));
+      console.log(`🚀 Sending renewal submission to Absher API...`);
 
       const headers = {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Conversation-Id': conversationId
+      };
+
+      // Add integrator user ID if provided
+      if (integratorUserId) {
+        headers['X-Integrator-User-Id'] = integratorUserId;
+        console.log(`🔑 Using Integrator User ID: ${integratorUserId}`);
+      }
+
+      // Add subscription key if available
+      if (config.subscriptionKey) {
+        headers['Ocp-Apim-Subscription-Key'] = config.subscriptionKey;
+      }
+
+      const response = await axios.post(apiUrl, requestBody, {
+        headers: headers,
+        timeout: 30000 // Increased timeout to 30 seconds
+      });
+
+      console.log(`✅ Response received from Absher API`);
+      console.log(`📊 Response Status: ${response.status}`);
+
+      if (response.status === 200) {
+        console.log(`✅ Successfully submitted Istemarah renewal`);
+        console.log('📦 RAW ABSHER API RESPONSE:');
+        console.log('='.repeat(80));
+        console.log(JSON.stringify(response.data, null, 2));
+        console.log('='.repeat(80) + '\n');
+
+        return {
+          success: true,
+          status: response.status,
+          conversationId: conversationId,
+          rawResponse: response.data
+        };
+      } else {
+        throw new Error(`Unexpected status code: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('\n' + '❌'.repeat(40));
+      console.error(`❌ ERROR SUBMITTING ISTEMARAH RENEWAL`);
+      console.error('❌'.repeat(40));
+      console.error(`Error Message: ${error.message}`);
+
+      if (error.response) {
+        console.error(`Response Status: ${error.response.status}`);
+        console.error(`Response Data:`, JSON.stringify(error.response.data, null, 2));
+      }
+      console.error('❌'.repeat(40) + '\n');
+      throw error;
+    }
+  }
+
+  /**
+   * STEP 3: Search Renewed Istemarah Records
+   * POST /api/v1/istemarah/renewal/client-search?page=0&size=10
+   * @param {string} plateInfo - Plate info string (e.g., "ببأ_7562_1")
+   * @param {string} integratorUserId - Integrator user ID
+   * @param {number} page - Page number (default: 0)
+   * @param {number} size - Page size (default: 10)
+   */
+  async searchRenewedIstemarah(plateInfo, integratorUserId, page = 0, size = 10) {
+    try {
+      console.log('\n' + '='.repeat(80));
+      console.log(`🔍 ABSHER API CALL - Step 3: Search Renewed Istemarah`);
+      console.log('='.repeat(80));
+      console.log(`📋 Plate Info: ${plateInfo}`);
+      console.log(`📋 Page: ${page}, Size: ${size}`);
+
+      const config = await this.getConfig();
+      const accessToken = await this.generateAccessToken();
+
+      // TAMM API endpoint for Istemarah renewal search
+      const apiUrl = `${config.apiUrl}/api/v1/istemarah/renewal/client-search?page=${page}&size=${size}`;
+
+      const requestBody = {
+        "$and": [
+          { "plateInfo": plateInfo }
+        ]
+      };
+
+      console.log(`📤 API URL: ${apiUrl}`);
+      console.log(`📦 Request Body:`, JSON.stringify(requestBody, null, 2));
+      console.log(`🚀 Sending search request to Absher API...`);
+
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Integrator-User-Id': integratorUserId
       };
 
       // Add subscription key if available
@@ -588,16 +660,16 @@ class TammService {
         headers['Ocp-Apim-Subscription-Key'] = config.subscriptionKey;
       }
 
-      const response = await axios.post(apiUrl, plateData, {
+      const response = await axios.post(apiUrl, requestBody, {
         headers: headers,
-        timeout: 10000 // Reduced timeout to 10 seconds
+        timeout: 30000 // Increased timeout to 30 seconds
       });
 
       console.log(`✅ Response received from Absher API`);
       console.log(`📊 Response Status: ${response.status}`);
 
       if (response.data) {
-        console.log(`✅ Successfully fetched Istemarah renewal details`);
+        console.log(`✅ Successfully fetched renewed Istemarah records`);
         console.log('📦 RAW ABSHER API RESPONSE:');
         console.log('='.repeat(80));
         console.log(JSON.stringify(response.data, null, 2));
@@ -609,7 +681,7 @@ class TammService {
       }
     } catch (error) {
       console.error('\n' + '❌'.repeat(40));
-      console.error(`❌ ERROR FETCHING ISTEMARAH RENEWAL DETAILS`);
+      console.error(`❌ ERROR SEARCHING RENEWED ISTEMARAH`);
       console.error('❌'.repeat(40));
       console.error(`Error Message: ${error.message}`);
 
@@ -617,6 +689,68 @@ class TammService {
         console.error(`Response Status: ${error.response.status}`);
         console.error(`Response Data:`, JSON.stringify(error.response.data, null, 2));
       }
+      console.error('❌'.repeat(40) + '\n');
+      throw error;
+    }
+  }
+
+  /**
+   * Complete Istemarah Renewal Workflow (All 3 Steps)
+   * @param {Object} plateNumber - Vehicle plate number
+   * @param {string} ownerMobileNumber - Owner's mobile number
+   * @param {string} integratorUserId - Integrator user ID (optional)
+   */
+  async completeIstemarahRenewal(plateNumber, ownerMobileNumber, integratorUserId = null) {
+    try {
+      console.log('\n' + '🔄'.repeat(40));
+      console.log(`🔄 COMPLETE ISTEMARAH RENEWAL WORKFLOW`);
+      console.log('🔄'.repeat(40));
+
+      // Step 1: Verify vehicle
+      console.log(`\n📍 STEP 1/3: Verifying vehicle...`);
+      const verifyResult = await this.verifyIstemarahRenewal(plateNumber);
+      console.log(`✅ Step 1 complete. Conversation ID: ${verifyResult.conversationId}`);
+
+      // Step 2: Submit renewal
+      console.log(`\n📍 STEP 2/3: Submitting renewal...`);
+      const submitResult = await this.submitIstemarahRenewal(
+        verifyResult.conversationId,
+        ownerMobileNumber,
+        integratorUserId
+      );
+      console.log(`✅ Step 2 complete. Status: ${submitResult.status}`);
+
+      // Step 3: Search for renewed record (optional, for confirmation)
+      console.log(`\n📍 STEP 3/3: Searching renewed record...`);
+      const plateInfo = typeof plateNumber === 'string'
+        ? plateNumber.replace(/\s+/g, '_')
+        : `${plateNumber.text1}_${plateNumber.number}_${plateNumber.text2}`;
+
+      let searchResult = null;
+      if (integratorUserId) {
+        try {
+          searchResult = await this.searchRenewedIstemarah(plateInfo, integratorUserId);
+          console.log(`✅ Step 3 complete. Found ${searchResult.totalElements || 0} records`);
+        } catch (error) {
+          console.log(`⚠️ Step 3 search failed (non-critical): ${error.message}`);
+        }
+      }
+
+      console.log('\n' + '✅'.repeat(40));
+      console.log(`✅ ISTEMARAH RENEWAL COMPLETED SUCCESSFULLY`);
+      console.log('✅'.repeat(40) + '\n');
+
+      return {
+        success: true,
+        verifyResult: verifyResult,
+        submitResult: submitResult,
+        searchResult: searchResult
+      };
+    } catch (error) {
+      console.error('\n' + '❌'.repeat(40));
+      console.error(`❌ COMPLETE ISTEMARAH RENEWAL FAILED`);
+      console.error('❌'.repeat(40));
+      console.error(`Error: ${error.message}`);
       console.error('❌'.repeat(40) + '\n');
       throw error;
     }
