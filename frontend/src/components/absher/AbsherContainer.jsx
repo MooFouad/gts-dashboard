@@ -155,7 +155,7 @@ const AbsherContainer = () => {
   };
 
   const handleBulkSyncFromAPI = async () => {
-    if (!window.confirm('⚠️ This will fetch data from Absher API for ALL vehicles.\n\nNote: This may take several minutes (1 second per vehicle).\n\nTotal vehicles: ' + items.length + '\nEstimated time: ~' + Math.ceil(items.length / 60) + ' minutes\n\nContinue?')) {
+    if (!window.confirm('⚠️ This will fetch data from Absher API for ALL vehicles.\n\nNote: This may take considerable time due to slow network.\nEach vehicle takes ~2-3 seconds to process.\n\nTotal vehicles: ' + items.length + '\nEstimated time: ~' + Math.ceil(items.length * 3 / 60) + ' minutes\n\nContinue?')) {
       return;
     }
 
@@ -173,7 +173,7 @@ const AbsherContainer = () => {
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 600000 // 10 minutes timeout for bulk operation
+          timeout: 900000 // 15 minutes timeout for bulk operation (slow network)
         }
       );
 

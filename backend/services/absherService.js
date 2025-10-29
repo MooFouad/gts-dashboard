@@ -139,7 +139,7 @@ class TammService {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
-        timeout: 30000 // Increased timeout to 30 seconds
+        timeout: 90000 // Increased timeout to 90 seconds for slow networks
       });
 
       if (response.data && response.data.access_token) {
@@ -161,8 +161,9 @@ class TammService {
 
       // Retry logic for timeout errors
       if ((error.code === 'ECONNABORTED' || error.message.includes('timeout')) && retryCount < 3) {
-        console.log(`⏳ Timeout occurred, waiting ${(retryCount + 1) * 2} seconds before retry...`);
-        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+        const waitTime = (retryCount + 1) * 5; // 5s, 10s, 15s waits
+        console.log(`⏳ Timeout occurred, waiting ${waitTime} seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
         return this.generateAccessToken(retryCount + 1);
       }
 
@@ -263,7 +264,7 @@ class TammService {
 
       const response = await axios.post(apiUrl, plateData, {
         headers: headers,
-        timeout: 30000 // Increased timeout to 30 seconds
+        timeout: 60000 // Increased timeout to 60 seconds for slow networks
       });
 
       console.log(`✅ Response received from Absher API`);
@@ -395,7 +396,7 @@ class TammService {
 
       const response = await axios.post(apiUrl, plateData, {
         headers: headers,
-        timeout: 30000 // Increased timeout to 30 seconds
+        timeout: 60000 // Increased timeout to 60 seconds for slow networks
       });
 
       console.log(`✅ Response received from Absher API`);
@@ -486,7 +487,7 @@ class TammService {
 
       const response = await axios.post(apiUrl, requestBody, {
         headers: headers,
-        timeout: 30000 // Increased timeout to 30 seconds
+        timeout: 60000 // Increased timeout to 60 seconds for slow networks
       });
 
       console.log(`✅ Response received from Absher API`);
@@ -580,7 +581,7 @@ class TammService {
 
       const response = await axios.post(apiUrl, requestBody, {
         headers: headers,
-        timeout: 30000 // Increased timeout to 30 seconds
+        timeout: 60000 // Increased timeout to 60 seconds for slow networks
       });
 
       console.log(`✅ Response received from Absher API`);
@@ -662,7 +663,7 @@ class TammService {
 
       const response = await axios.post(apiUrl, requestBody, {
         headers: headers,
-        timeout: 30000 // Increased timeout to 30 seconds
+        timeout: 60000 // Increased timeout to 60 seconds for slow networks
       });
 
       console.log(`✅ Response received from Absher API`);
