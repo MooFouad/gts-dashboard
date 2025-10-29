@@ -4,6 +4,118 @@ const Absher = require('../models/Absher');
 const { AppError } = require('../middleware/errorHandler');
 const absherService = require('../services/absherService');
 
+// Test Absher API connection
+router.get('/test-connection', async (req, res, next) => {
+  try {
+    console.log('\n' + '🧪'.repeat(40));
+    console.log('Testing Absher API Connection...');
+    console.log('🧪'.repeat(40));
+
+    // Get current configuration
+    const config = await absherService.getConfig();
+
+    console.log('📋 Current Configuration:');
+    console.log(`   Auth URL: ${config.authUrl}`);
+    console.log(`   API URL: ${config.apiUrl}`);
+    console.log(`   Client ID: ${config.clientId ? '***' + config.clientId.slice(-4) : 'NOT SET'}`);
+    console.log(`   Realm: ${config.realmName || 'NOT SET'}`);
+    console.log('');
+
+    // Test authentication
+    console.log('🔐 Testing authentication...');
+    const startTime = Date.now();
+
+    try {
+      const token = await absherService.generateAccessToken();
+      const duration = Date.now() - startTime;
+
+      console.log(`✅ Authentication successful! (${duration}ms)`);
+      console.log(`   Token: ${token.substring(0, 20)}...`);
+      console.log('🧪'.repeat(40) + '\n');
+
+      return res.json({
+        success: true,
+        message: 'Absher API connection successful!',
+        details: {
+          authUrl: config.authUrl,
+          apiUrl: config.apiUrl,
+          clientId: '***' + config.clientId.slice(-4),
+          realmName: config.realmName,
+          authenticated: true,
+          responseTime: `${duration}ms`,
+          tokenPreview: token.substring(0, 20) + '...'
+        }
+      });
+    } catch (authError) {
+      const duration = Date.now() - startTime;
+      console.error(`❌ Authentication failed! (${duration}ms)`);
+      console.error(`   Error: ${authError.message}`);
+      console.log('🧪'.repeat(40) + '\n');
+
+      // Provide specific error messages
+      let errorType = 'UNKNOWN_ERROR';
+      let userMessage = authError.message;
+      let suggestions = [];
+
+      if (authError.message.includes('ETIMEDOUT') || authError.message.includes('timeout')) {
+        errorType = 'TIMEOUT';
+        userMessage = 'Connection timeout - server did not respond';
+        suggestions = [
+          'Check if you need VPN access',
+          'Verify your IP is whitelisted in Absher Business dashboard',
+          'Ensure the server URL is correct',
+          'Check your internet connection'
+        ];
+      } else if (authError.message.includes('ECONNREFUSED')) {
+        errorType = 'CONNECTION_REFUSED';
+        userMessage = 'Connection refused by server';
+        suggestions = [
+          'Verify the authorization server URL is correct',
+          'Check if the server is accessible from your network',
+          'Ensure you are using the correct environment (production vs QA)'
+        ];
+      } else if (authError.message.includes('401') || authError.message.includes('Unauthorized')) {
+        errorType = 'INVALID_CREDENTIALS';
+        userMessage = 'Authentication failed - invalid credentials';
+        suggestions = [
+          'Verify your Client ID in Absher Business dashboard',
+          'Verify your Client Secret in Absher Business dashboard',
+          'Ensure credentials match your environment (production vs QA)',
+          'Check for extra spaces in your credentials'
+        ];
+      } else if (authError.message.includes('ENOTFOUND') || authError.message.includes('getaddrinfo')) {
+        errorType = 'DNS_ERROR';
+        userMessage = 'Cannot resolve server address';
+        suggestions = [
+          'Check the authorization server URL spelling',
+          'Verify DNS is working',
+          'Try using production URL: https://idp.elm.sa',
+          'Or QA URL: https://idp.apps.devocp4.elm.sa'
+        ];
+      }
+
+      return res.status(503).json({
+        success: false,
+        message: userMessage,
+        errorType: errorType,
+        details: {
+          authUrl: config.authUrl,
+          apiUrl: config.apiUrl,
+          clientId: config.clientId ? '***' + config.clientId.slice(-4) : 'NOT SET',
+          realmName: config.realmName,
+          authenticated: false,
+          responseTime: `${duration}ms`,
+          error: authError.message
+        },
+        suggestions: suggestions
+      });
+    }
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    next(new AppError(`Connection test failed: ${error.message}`, 500));
+  }
+});
+
 // GET all absher records
 router.get('/', async (req, res, next) => {
   try {

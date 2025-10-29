@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, TestTube } from 'lucide-react';
 import AbsherTable from './AbsherTable';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
@@ -12,14 +12,82 @@ const AbsherContainer = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [items, setItems] = useState([]);
 
   // Don't auto-fetch on mount - let user click the button
   // This prevents immediate timeout errors when API is unavailable
   useEffect(() => {
     // Optional: Load from local cache or show empty state
-    console.log('Absher tab loaded. Click "Refresh from Absher API" to fetch data.');
+    console.log('Absher tab loaded. Click "Test Connection" to verify API access.');
   }, []);
+
+  // Test Absher API connection
+  const testConnection = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please login first');
+      return;
+    }
+
+    setTesting(true);
+
+    try {
+      const response = await axios.get(
+        `${API_URL}/absher/test-connection`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 30000 // 30 seconds timeout
+        }
+      );
+
+      if (response.data.success) {
+        const { details } = response.data;
+        alert(
+          `✅ Connection Successful!\n\n` +
+          `Auth URL: ${details.authUrl}\n` +
+          `API URL: ${details.apiUrl}\n` +
+          `Client ID: ${details.clientId}\n` +
+          `Realm: ${details.realmName}\n` +
+          `Response Time: ${details.responseTime}\n\n` +
+          `You can now fetch vehicle data!`
+        );
+      }
+    } catch (error) {
+      console.error('Connection test failed:', error);
+
+      if (error.response?.data) {
+        const { message, errorType, details, suggestions } = error.response.data;
+
+        let alertMessage = `❌ Connection Failed\n\n${message}\n\n`;
+
+        if (details) {
+          alertMessage += `Configuration:\n`;
+          alertMessage += `• Auth URL: ${details.authUrl}\n`;
+          alertMessage += `• API URL: ${details.apiUrl}\n`;
+          alertMessage += `• Client ID: ${details.clientId}\n`;
+          alertMessage += `• Realm: ${details.realmName}\n`;
+          alertMessage += `• Response Time: ${details.responseTime}\n\n`;
+        }
+
+        if (suggestions && suggestions.length > 0) {
+          alertMessage += `Suggestions:\n`;
+          suggestions.forEach((suggestion, index) => {
+            alertMessage += `${index + 1}. ${suggestion}\n`;
+          });
+        }
+
+        alert(alertMessage);
+      } else {
+        alert(
+          `❌ Connection Test Failed\n\n` +
+          (error.message || 'Unknown error occurred')
+        );
+      }
+    } finally {
+      setTesting(false);
+    }
+  };
 
   // Fetch Absher data from API
   const fetchAbsherData = async () => {
@@ -175,9 +243,18 @@ const AbsherContainer = () => {
           </select>
         </div>
         <button
+          onClick={testConnection}
+          disabled={testing || isGuest}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed ml-4"
+          title="Test Absher API connection"
+        >
+          <TestTube size={18} className={testing ? 'animate-pulse' : ''} />
+          {testing ? 'Testing...' : 'Test Connection'}
+        </button>
+        <button
           onClick={fetchAbsherData}
           disabled={loading || isGuest}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed ml-4"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed ml-2"
           title="Refresh data from Absher API"
         >
           <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
