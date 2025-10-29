@@ -125,178 +125,75 @@ router.get('/count/total', async (req, res, next) => {
   }
 });
 
-// BULK SYNC ALL vehicles from Absher API (Government Data)
-router.post('/bulk-sync-from-api', async (req, res, next) => {
+// Fetch Absher data from API (no sync, just return data)
+router.post('/fetch-from-api', async (req, res, next) => {
   try {
-    console.log('🔄 Starting bulk sync from Absher API...');
+    console.log('📡 Fetching data from Absher API...');
 
-    // Import Vehicle model
+    // Get all vehicles to fetch their Absher data
     const Vehicle = require('../models/Vehicle');
+    const vehicles = await Vehicle.find({}).select('plateNumber sequenceNumber actualDriverName').lean();
 
-    // Fetch all vehicles
-    const vehicles = await Vehicle.find({}).lean();
-    console.log(`📊 Found ${vehicles.length} vehicles to sync from API`);
+    console.log(`📊 Found ${vehicles.length} vehicles`);
 
-    if (vehicles.length === 0) {
-      return res.json({
-        success: true,
-        message: 'No vehicles found to sync',
-        data: {
-          synced: 0,
-          updated: 0,
-          created: 0,
-          skipped: 0,
-          failed: 0,
-          errors: []
-        }
-      });
-    }
-
-    let synced = 0;
-    let updated = 0;
-    let created = 0;
-    let skipped = 0;
-    let failed = 0;
-    const errors = [];
     const results = [];
 
-    // Process each vehicle
+    // Fetch data for each vehicle from Absher API
     for (const vehicle of vehicles) {
+      if (!vehicle.plateNumber) continue;
+
       try {
-        // Skip if no plate number
-        if (!vehicle.plateNumber) {
-          console.log(`⏭️  Skipping vehicle without plate number: ${vehicle._id}`);
-          skipped++;
-          continue;
-        }
+        console.log(`📞 Fetching Absher data for: ${vehicle.plateNumber}`);
 
-        console.log(`\n🔍 Fetching data for: ${vehicle.plateNumber}`);
+        // Fetch insurance data from Absher API
+        const insuranceData = await absherService.getVehicleInsuranceDetails(
+          vehicle.plateNumber,
+          vehicle.sequenceNumber
+        );
 
-        // Fetch insurance details from Absher API
-        let insuranceData = null;
-        try {
-          insuranceData = await absherService.getVehicleInsuranceDetails(
-            vehicle.plateNumber,
-            vehicle.sequenceNumber
-          );
-          console.log(`✅ Got insurance data for ${vehicle.plateNumber}`);
-        } catch (error) {
-          console.log(`⚠️  Could not fetch insurance for ${vehicle.plateNumber}: ${error.message}`);
-        }
+        // Fetch MVPI data from Absher API
+        const mvpiData = await absherService.getMVPIDetails(
+          vehicle.plateNumber,
+          vehicle.sequenceNumber
+        );
 
-        // Fetch MVPI details from Absher API
-        let mvpiData = null;
-        try {
-          mvpiData = await absherService.getMVPIDetails(
-            vehicle.plateNumber,
-            vehicle.sequenceNumber
-          );
-          console.log(`✅ Got MVPI data for ${vehicle.plateNumber}`);
-        } catch (error) {
-          console.log(`⚠️  Could not fetch MVPI for ${vehicle.plateNumber}: ${error.message}`);
-        }
-
-        // Skip if no data fetched from API
-        if (!insuranceData && !mvpiData) {
-          console.log(`❌ No data available from API for ${vehicle.plateNumber}`);
-          failed++;
-          errors.push({
-            plateNumber: vehicle.plateNumber,
-            error: 'No data returned from Absher API'
-          });
-          continue;
-        }
-
-        // Check if Absher record already exists
-        let absherRecord = await Absher.findOne({ plateNumber: vehicle.plateNumber });
-
-        // Prepare Absher data from API response
-        const absherData = {
-          plateNumber: vehicle.plateNumber,
-          name: vehicle.actualDriverName || vehicle.plateNumber,
-          referenceNumber: vehicle.sequenceNumber || vehicle.plateNumber,
-
-          // From Insurance API
-          expiryDate: insuranceData?.insuranceExpiryDate || null,
-          ownerName: vehicle.actualDriverName || '',
-          ownerId: vehicle.actualDriverId || '',
-
-          // From MVPI API
-          inspectionExpiryDate: mvpiData?.mvpiExpiryDate || null,
-
-          // Keep vehicle's license expiry if available
-          licenseExpiryDate: vehicle.licenseExpiryDate || null,
-
-          notes: `Synced from Absher API - ${vehicle.vehicleMaker || ''} ${vehicle.vehicleModel || ''} ${vehicle.modelYear || ''}`.trim(),
-          dataSource: 'absher',
-          lastSyncDate: new Date()
-        };
-
-        if (absherRecord) {
-          // Update existing record
-          absherRecord = await Absher.findByIdAndUpdate(
-            absherRecord._id,
-            absherData,
-            { new: true, runValidators: true }
-          );
-          console.log(`✅ Updated: ${vehicle.plateNumber}`);
-          updated++;
-        } else {
-          // Create new record
-          absherRecord = new Absher(absherData);
-          await absherRecord.save();
-          console.log(`✅ Created: ${vehicle.plateNumber}`);
-          created++;
-        }
-
-        synced++;
+        // Add to results
         results.push({
           plateNumber: vehicle.plateNumber,
-          status: 'success',
-          hasInsurance: !!insuranceData,
-          hasMVPI: !!mvpiData
+          name: vehicle.actualDriverName || vehicle.plateNumber,
+          insuranceCompany: insuranceData?.insuranceCompany,
+          insuranceExpiryDate: insuranceData?.insuranceExpiryDate,
+          inspectionExpiryDate: mvpiData?.mvpiExpiryDate || mvpiData?.inspectionExpiryDate,
+          rawInsuranceData: insuranceData,
+          rawMvpiData: mvpiData
         });
 
-        // Add small delay between API calls to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+        console.log(`✅ Got data for ${vehicle.plateNumber}`);
+
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
       } catch (error) {
-        console.error(`❌ Error syncing vehicle ${vehicle.plateNumber}:`, error.message);
-        failed++;
-        errors.push({
+        console.log(`⚠️ Could not fetch data for ${vehicle.plateNumber}: ${error.message}`);
+        results.push({
           plateNumber: vehicle.plateNumber,
+          name: vehicle.actualDriverName || vehicle.plateNumber,
           error: error.message
         });
       }
     }
 
-    console.log(`\n✅ Bulk API sync complete:`);
-    console.log(`   Total vehicles: ${vehicles.length}`);
-    console.log(`   Successfully synced: ${synced}`);
-    console.log(`   Created: ${created}`);
-    console.log(`   Updated: ${updated}`);
-    console.log(`   Skipped: ${skipped}`);
-    console.log(`   Failed: ${failed}`);
-    console.log(`   Errors: ${errors.length}`);
+    console.log(`✅ Fetched data for ${results.length} vehicles`);
 
-    res.json({
+    return res.json({
       success: true,
-      message: `Successfully synced ${synced} vehicles from Absher API`,
-      data: {
-        total: vehicles.length,
-        synced,
-        updated,
-        created,
-        skipped,
-        failed,
-        errors,
-        results
-      }
+      message: `Fetched Absher data for ${results.length} vehicles`,
+      data: results
     });
 
   } catch (error) {
-    console.error('❌ Error in bulk API sync:', error);
-    next(new AppError(`Bulk API sync failed: ${error.message}`, 500));
+    console.error('❌ Error fetching from Absher API:', error);
+    next(new AppError(`Failed to fetch from Absher API: ${error.message}`, 500));
   }
 });
 
