@@ -194,6 +194,54 @@ export const exportElectricityToExcel = (electricity) => {
 };
 
 /**
+ * Export social insurance data to Excel
+ */
+export const exportSocialInsuranceToExcel = (records) => {
+  if (!records || records.length === 0) {
+    alert('No data to export');
+    return;
+  }
+
+  // Select only the fields that appear in the table
+  const exportData = records.map(record => ({
+    'Name': record.name || '',
+    'ID Number': record.nin || '',
+    'Division': record.division || '',
+    'Start Date': record.startDate || '',
+    'End Date': record.endDate || '',
+    'Remaining Days': record.remainingDays !== null && record.remainingDays !== undefined
+      ? record.remainingDays > 0
+        ? `${record.remainingDays} days`
+        : record.remainingDays === 0
+        ? 'Expires today'
+        : `Expired ${Math.abs(record.remainingDays)} days ago`
+      : '',
+    'Status': record.status || '',
+    'Notes': record.notes || ''
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(exportData);
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 25 }, // Name
+    { wch: 18 }, // ID Number
+    { wch: 20 }, // Division
+    { wch: 15 }, // Start Date
+    { wch: 15 }, // End Date
+    { wch: 20 }, // Remaining Days
+    { wch: 15 }, // Status
+    { wch: 40 }  // Notes
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Social Insurance');
+
+  const timestamp = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `SocialInsurance_Export_${timestamp}.xlsx`);
+};
+
+/**
  * Export all data to a single Excel file with multiple sheets (only table columns)
  */
 export const exportAllDataToExcel = (vehicles, homeRents, electricity) => {

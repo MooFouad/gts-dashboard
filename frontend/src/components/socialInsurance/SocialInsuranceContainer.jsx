@@ -7,6 +7,7 @@ import Toolbar from '../layout/Toolbar';
 import ExportButton from '../common/ExportButton';
 import { useDataManagement } from '../../hooks/useDataManagement';
 import { useAuth } from '../../contexts/AuthContext';
+import { exportSocialInsuranceToExcel } from '../../utils/excel/excelUtils';
 
 const SocialInsuranceContainer = () => {
   const { user } = useAuth();
@@ -70,27 +71,12 @@ const SocialInsuranceContainer = () => {
   };
 
   const handleExport = () => {
-    // Simple CSV export
-    const headers = ['Name', 'ID', 'Division', 'Start Date', 'End Date', 'Remaining Days', 'Status'];
-    const csvRows = [
-      headers.join(','),
-      ...filteredItems.map(item => [
-        item.name,
-        item.nin,
-        item.division,
-        item.startDate,
-        item.endDate,
-        item.remainingDays || '',
-        item.status
-      ].join(','))
-    ];
-
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `social-insurance-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+    try {
+      exportSocialInsuranceToExcel(filteredItems);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export data to Excel. Please try again.');
+    }
   };
 
   if (loading) {
