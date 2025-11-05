@@ -150,24 +150,7 @@ app.get('/api/health', (req, res) => {
 const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/api/notifications', notificationRoutes);
 
-// GOSI API Test Endpoint (Public - for testing connection)
-const socialInsuranceService = require('./services/socialInsuranceService');
-app.get('/api/social-insurance/test-connection', async (req, res) => {
-  try {
-    const result = await socialInsuranceService.testConnection();
-
-    if (result.success) {
-      return res.json(result);
-    } else {
-      return res.status(503).json(result);
-    }
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
+// GOSI API integration removed - using simple database system now
 
 // Protected routes (authentication required)
 app.use('/api/vehicles', authenticate, require('./routes/vehicleRoutes'));
