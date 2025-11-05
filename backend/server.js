@@ -140,7 +140,8 @@ app.get('/api/health', (req, res) => {
       electricity: '/api/electricity',
       notifications: '/api/notifications',
       import: '/api/import',
-      absher: '/api/absher'
+      absher: '/api/absher',
+      socialInsurance: '/api/social-insurance'
     }
   });
 });
@@ -149,6 +150,25 @@ app.get('/api/health', (req, res) => {
 const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/api/notifications', notificationRoutes);
 
+// GOSI API Test Endpoint (Public - for testing connection)
+const socialInsuranceService = require('./services/socialInsuranceService');
+app.get('/api/social-insurance/test-connection', async (req, res) => {
+  try {
+    const result = await socialInsuranceService.testConnection();
+
+    if (result.success) {
+      return res.json(result);
+    } else {
+      return res.status(503).json(result);
+    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // Protected routes (authentication required)
 app.use('/api/vehicles', authenticate, require('./routes/vehicleRoutes'));
 app.use('/api/home-rents', authenticate, require('./routes/homeRentRoutes'));
@@ -156,6 +176,7 @@ app.use('/api/electricity', authenticate, require('./routes/electricityRoutes'))
 // Note: Notification routes are defined individually above (public and cron routes)
 app.use('/api/import', authenticate, authorize('admin', 'user'), require('./routes/importRoutes'));
 app.use('/api/absher', authenticate, require('./routes/absherRoutes'));
+app.use('/api/social-insurance', authenticate, require('./routes/socialInsuranceRoutes'));
 
 // Use centralized error handler
 app.use(errorHandler);
@@ -172,7 +193,8 @@ app.use((req, res) => {
       '/api/electricity',
       '/api/notifications',
       '/api/import',
-      '/api/absher'
+      '/api/absher',
+      '/api/social-insurance'
     ]
   });
 });
@@ -216,4 +238,4 @@ if (process.env.VERCEL !== '1') {
 process.on('unhandledRejection', handleUnhandledRejection);
 
 // Export the Express app for Vercel serverless
-module.exports = app;
+module.exports = app; 

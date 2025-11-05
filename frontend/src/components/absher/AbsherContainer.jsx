@@ -8,7 +8,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const AbsherContainer = () => {
   const { user } = useAuth();
-  const isGuest = user?.role === 'guest';
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(false);
@@ -89,7 +88,7 @@ const AbsherContainer = () => {
     }
   };
 
-  // Fetch Absher data from API
+  // Fetch Absher data from API using new search-all endpoint
   const fetchAbsherData = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -100,12 +99,18 @@ const AbsherContainer = () => {
     setLoading(true);
 
     try {
+      console.log('🔍 Fetching all Istemarah records from Absher API...');
+
       const response = await axios.post(
-        `${API_URL}/absher/fetch-from-api`,
-        {},
+        `${API_URL}/absher/istemarah/search-all`,
+        {
+          integratorUserId: '7001486054',
+          page: 0,
+          size: 100  // Fetch up to 100 records per page
+        },
         {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 900000 // 15 minutes for bulk fetch
+          timeout: 60000 // 60 seconds timeout
         }
       );
 
@@ -120,29 +125,34 @@ const AbsherContainer = () => {
       }
 
       if (response.data.success) {
-        const { data, summary } = response.data;
-        console.log('✅ Fetched Absher data:', data);
+        const { content, totalElements, totalPages, currentPage, hasMore } = response.data.data;
+        console.log('✅ Fetched Absher data:', content);
+        console.log(`📊 Total available: ${totalElements} records`);
 
-        // Filter out error results for display
-        const successfulData = data.filter(item => item.status === 'success');
-        setItems(successfulData);
+        // Map the data to match our display format
+        const formattedData = content.map(record => ({
+          plateNumber: record.plateInfo || record.plateNumber || 'N/A',
+          name: record.vehicleOwnerName || record.ownerName || 'N/A',
+          insuranceCompany: record.insuranceCompany || 'N/A',
+          insuranceExpiryDate: record.insuranceExpiryDate || record.expiryDate,
+          inspectionExpiryDate: record.inspectionExpiryDate || record.mvpiExpiryDate,
+          licenseExpiryDate: record.licenseExpiryDate,
+          status: 'success',
+          rawData: record  // Keep original data for reference
+        }));
+
+        setItems(formattedData);
 
         // Show summary
-        if (summary) {
-          const message =
-            `📊 Fetch Complete!\n\n` +
-            `✅ Successful: ${summary.successful}\n` +
-            `❌ Failed: ${summary.errors}\n` +
-            `⏱️ Timeouts: ${summary.timeouts}\n` +
-            `📦 Total: ${summary.total}\n\n` +
-            (summary.successful > 0
-              ? `Displaying ${successfulData.length} vehicles with data.`
-              : `No data was fetched. Please check your VPN/network connection.`);
+        const message =
+          `📊 Fetch Complete!\n\n` +
+          `✅ Records fetched: ${content.length}\n` +
+          `📦 Total available: ${totalElements}\n` +
+          `📄 Current page: ${currentPage + 1}/${totalPages}\n` +
+          (hasMore ? `\n⚠️ More records available. Showing first ${content.length}.` : '') +
+          `\n\nData loaded successfully!`;
 
-          alert(message);
-        } else {
-          alert(`Successfully fetched data for ${successfulData.length} vehicles from Absher API!`);
-        }
+        alert(message);
       }
     } catch (error) {
       console.error('Error fetching Absher data:', error);
@@ -153,9 +163,9 @@ const AbsherContainer = () => {
           `⏱️ Request Timeout\n\n` +
           `The request took too long to complete. This may be due to:\n` +
           `• Slow network connection\n` +
-          `• Server overload\n` +
-          `• Large number of vehicles\n\n` +
-          `Please try again or contact support.`
+          `• VPN requirement\n` +
+          `• Server overload\n\n` +
+          `Please try again or check your VPN connection.`
         );
       } else if (error.response?.status === 503) {
         alert(
@@ -244,7 +254,7 @@ const AbsherContainer = () => {
         </div>
         <button
           onClick={testConnection}
-          disabled={testing || isGuest}
+          disabled={testing}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed ml-4"
           title="Test Absher API connection"
         >
@@ -253,7 +263,7 @@ const AbsherContainer = () => {
         </button>
         <button
           onClick={fetchAbsherData}
-          disabled={loading || isGuest}
+          disabled={loading}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed ml-2"
           title="Refresh data from Absher API"
         >

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Car, Home, Zap } from 'lucide-react';
+import { Car, Home, Zap, FileText, Shield } from 'lucide-react';
 
-const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, electricityCount }) => {
+const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, electricityCount, socialInsuranceCount }) => {
+  // absherCount - Temporarily disabled for production
   const handleTabChange = (tab) => {
     if (tab !== activeTab) {
       onTabChange(tab);
@@ -42,6 +43,23 @@ const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, 
             <Zap size={20} />
             <span>Electricity ({electricityCount})</span>
           </button>
+
+          <button
+            onClick={() => handleTabChange('socialInsurance')}
+            className={tabClasses('socialInsurance')}
+          >
+            <Shield size={20} />
+            <span>Social Insurance ({socialInsuranceCount})</span>
+          </button>
+
+          {/* Temporarily disabled for production - pending bug fixes */}
+          {/* <button
+            onClick={() => handleTabChange('absher')}
+            className={tabClasses('absher')}
+          >
+            <FileText size={20} />
+            <span>Absher ({absherCount})</span>
+          </button> */}
         </div>
       </div>
     </div>

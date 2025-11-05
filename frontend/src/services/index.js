@@ -3,14 +3,16 @@ import api from './api';
 import vehicleService from './vehicleService';
 import homeRentService from './homeRentService';
 import electricityService from './electricityService';
-import dashboardService from './dashboardService';
+import absherService from './absherService';
+import socialInsuranceService from './socialInsuranceService';
 
 export {
   api,
   vehicleService,
   homeRentService,
   electricityService,
-  dashboardService
+  absherService,
+  socialInsuranceService
 };
 
 export default {
@@ -18,5 +20,6 @@ export default {
   vehicle: vehicleService,
   homeRent: homeRentService,
   electricity: electricityService,
-  dashboard: dashboardService
+  absher: absherService,
+  socialInsurance: socialInsuranceService
 };

@@ -696,6 +696,86 @@ class TammService {
   }
 
   /**
+   * Search ALL Istemarah Records (no filter)
+   * POST /api/v1/istemarah/renewal/client-search?page=0&size=10
+   * Fetches all Istemarah records without any filter
+   * @param {string} integratorUserId - Integrator user ID (default: '7001486054')
+   * @param {number} page - Page number (default: 0)
+   * @param {number} size - Page size (default: 10)
+   */
+  async searchAllIstemarah(integratorUserId = '7001486054', page = 0, size = 10) {
+    try {
+      console.log('\n' + '='.repeat(80));
+      console.log(`🔍 ABSHER API CALL - Search ALL Istemarah Records`);
+      console.log('='.repeat(80));
+      console.log(`📋 Integrator User ID: ${integratorUserId}`);
+      console.log(`📋 Page: ${page}, Size: ${size}`);
+
+      const config = await this.getConfig();
+      const accessToken = await this.generateAccessToken();
+
+      // TAMM API endpoint for Istemarah renewal search
+      const apiUrl = `${config.apiUrl}/api/v1/istemarah/renewal/client-search?page=${page}&size=${size}`;
+
+      // Empty filter to get all records
+      const requestBody = {
+        "$and": []
+      };
+
+      console.log(`📤 API URL: ${apiUrl}`);
+      console.log(`📦 Request Body:`, JSON.stringify(requestBody, null, 2));
+      console.log(`🚀 Sending request to fetch ALL Istemarah records...`);
+
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Integrator-User-Id': integratorUserId
+      };
+
+      // Add subscription key if available
+      if (config.subscriptionKey) {
+        headers['Ocp-Apim-Subscription-Key'] = config.subscriptionKey;
+      }
+
+      const response = await axios.post(apiUrl, requestBody, {
+        headers: headers,
+        timeout: 60000 // 60 seconds timeout
+      });
+
+      console.log(`✅ Response received from Absher API`);
+      console.log(`📊 Response Status: ${response.status}`);
+
+      if (response.data) {
+        console.log(`✅ Successfully fetched all Istemarah records`);
+        console.log(`📊 Total Elements: ${response.data.totalElements || 0}`);
+        console.log(`📊 Total Pages: ${response.data.totalPages || 0}`);
+        console.log(`📊 Current Page: ${response.data.number || 0}`);
+        console.log(`📊 Records in this page: ${response.data.content?.length || 0}`);
+        console.log('📦 RAW ABSHER API RESPONSE:');
+        console.log('='.repeat(80));
+        console.log(JSON.stringify(response.data, null, 2));
+        console.log('='.repeat(80) + '\n');
+
+        return response.data;
+      } else {
+        throw new Error('Empty response from TAMM API');
+      }
+    } catch (error) {
+      console.error('\n' + '❌'.repeat(40));
+      console.error(`❌ ERROR SEARCHING ALL ISTEMARAH RECORDS`);
+      console.error('❌'.repeat(40));
+      console.error(`Error Message: ${error.message}`);
+
+      if (error.response) {
+        console.error(`Response Status: ${error.response.status}`);
+        console.error(`Response Data:`, JSON.stringify(error.response.data, null, 2));
+      }
+      console.error('❌'.repeat(40) + '\n');
+      throw error;
+    }
+  }
+
+  /**
    * Complete Istemarah Renewal Workflow (All 3 Steps)
    * @param {Object} plateNumber - Vehicle plate number
    * @param {string} ownerMobileNumber - Owner's mobile number

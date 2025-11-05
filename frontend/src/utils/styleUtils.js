@@ -31,7 +31,7 @@ export const getRowColorClass = (item, type) => {
       
       if (type === 'electricity') {
             const dueStatus = getExpiryStatus(item.dueDate);
-            
+
             if (dueStatus === 'expired' && item.paymentStatus !== 'Paid') {
                   return 'bg-red-100 border-l-4 border-red-500';
             }
@@ -39,6 +39,27 @@ export const getRowColorClass = (item, type) => {
                   return 'bg-yellow-100 border-l-4 border-orange-500';
             }
       }
-      
+
+      if (type === 'absher') {
+            const dates = [
+                  item.expiryDate,
+                  item.inspectionExpiryDate,
+                  item.licenseExpiryDate
+            ].filter(date => date);
+
+            if (dates.length === 0) {
+                  return 'bg-white border-l-4 border-transparent';
+            }
+
+            const statuses = dates.map(date => getExpiryStatus(date));
+
+            if (statuses.some(status => status === 'expired')) {
+                  return 'bg-red-100 border-l-4 border-red-500';
+            }
+            if (statuses.some(status => status === 'warning')) {
+                  return 'bg-yellow-100 border-l-4 border-orange-500';
+            }
+      }
+
       return 'bg-white border-l-4 border-transparent';
 };

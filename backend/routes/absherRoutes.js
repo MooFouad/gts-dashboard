@@ -733,4 +733,65 @@ router.post('/istemarah/renew-complete', async (req, res, next) => {
   }
 });
 
+// Search ALL Istemarah records (no filter)
+router.post('/istemarah/search-all', async (req, res, next) => {
+  try {
+    const { integratorUserId = '7001486054', page = 0, size = 10 } = req.body;
+
+    console.log('🔍 Searching all Istemarah records from Absher API');
+    console.log(`📋 Integrator User ID: ${integratorUserId}`);
+    console.log(`📋 Page: ${page}, Size: ${size}`);
+
+    // Test connection first to fail fast
+    console.log('🔌 Testing Absher API connection...');
+    try {
+      await absherService.generateAccessToken();
+      console.log('✅ Absher API connection successful');
+    } catch (error) {
+      console.error('❌ Absher API connection failed:', error.message);
+
+      // Check if it's a network/timeout issue
+      if (error.message.includes('ETIMEDOUT') || error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
+        return res.status(503).json({
+          success: false,
+          message: 'Absher API is currently unreachable. This may be due to:\n' +
+                   '• Network connectivity issues\n' +
+                   '• VPN requirement (server is in Saudi Arabia)\n' +
+                   '• IP whitelist restrictions\n' +
+                   '• Server maintenance\n\n' +
+                   'Please check your network connection or VPN access.',
+          error: 'API_UNREACHABLE',
+          details: error.message,
+          data: null
+        });
+      }
+
+      throw error;
+    }
+
+    // Search all Istemarah records
+    const result = await absherService.searchAllIstemarah(integratorUserId, page, size);
+
+    console.log(`✅ Successfully fetched ${result.content?.length || 0} records`);
+    console.log(`📊 Total records available: ${result.totalElements || 0}`);
+
+    res.json({
+      success: true,
+      message: `Successfully fetched ${result.content?.length || 0} records (${result.totalElements || 0} total)`,
+      data: {
+        content: result.content || [],
+        totalElements: result.totalElements || 0,
+        totalPages: result.totalPages || 0,
+        currentPage: result.number || 0,
+        pageSize: result.size || size,
+        hasMore: (result.number || 0) < (result.totalPages || 0) - 1
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error searching all Istemarah records:', error);
+    next(new AppError(`Failed to search Istemarah records: ${error.message}`, 500));
+  }
+});
+
 module.exports = router;

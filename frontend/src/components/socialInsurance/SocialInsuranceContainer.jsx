@@ -1,21 +1,20 @@
 import React, { useState } from 'react';
-import HomeRentsTable from './HomeRentsTable';
-import HomeRentForm from './HomeRentForm';
+import SocialInsuranceTable from './SocialInsuranceTable';
+import SocialInsuranceForm from './SocialInsuranceForm';
 import FormDialog from '../common/FormDialog';
 import ConfirmDialog from '../common/ConfirmDialog';
 import Toolbar from '../layout/Toolbar';
 import ExportButton from '../common/ExportButton';
 import { useDataManagement } from '../../hooks/useDataManagement';
 import { useAuth } from '../../contexts/AuthContext';
-import { exportHomeRentsToExcel } from '../../utils/excel/excelUtils';
 
-const HomeRentsContainer = () => {
+const SocialInsuranceContainer = () => {
   const { user } = useAuth();
   const [formDialog, setFormDialog] = useState({ isOpen: false, data: null });
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const { data: items, addItem, updateItem, deleteItem, loading, error, refreshData } = useDataManagement('homeRent');
+  const { data: items, addItem, updateItem, deleteItem, loading, error, refreshData } = useDataManagement('socialInsurance');
 
   const filteredItems = items.filter((item) => {
     // Search filter
@@ -26,27 +25,7 @@ const HomeRentsContainer = () => {
     // Status filter
     let matchStatus = true;
     if (filterStatus !== 'all') {
-      const isContractExpired = new Date(item.contractEndingDate) < new Date();
-      const hasUpcomingPayment = [
-        item.firstPaymentDate,
-        item.secondPaymentDate,
-        item.thirdPaymentDate,
-        item.fourthPaymentDate
-      ].some(date => {
-        const paymentDate = new Date(date);
-        const now = new Date();
-        const thirtyDaysFromNow = new Date();
-        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-        return paymentDate >= now && paymentDate <= thirtyDaysFromNow;
-      });
-      
-      if (filterStatus === 'expired') {
-        matchStatus = isContractExpired;
-      } else if (filterStatus === 'warning') {
-        matchStatus = !isContractExpired && hasUpcomingPayment;
-      } else if (filterStatus === 'valid') {
-        matchStatus = !isContractExpired && !hasUpcomingPayment;
-      }
+      matchStatus = item.status === filterStatus;
     }
 
     return matchSearch && matchStatus;
@@ -56,14 +35,13 @@ const HomeRentsContainer = () => {
     setFormDialog({ isOpen: true, data: null });
   };
 
-  const handleEdit = (rent) => {
-    setFormDialog({ isOpen: true, data: rent });
+  const handleEdit = (record) => {
+    setFormDialog({ isOpen: true, data: record });
   };
 
   const handleSubmit = async (formData) => {
     try {
       if (formDialog.data) {
-        console.log('Updating home rent with data:', formDialog.data);
         await updateItem(formDialog.data._id, {
           ...formData,
           _id: formDialog.data._id
@@ -72,7 +50,6 @@ const HomeRentsContainer = () => {
         await addItem(formData);
       }
       setFormDialog({ isOpen: false, data: null });
-      // Refresh data to ensure UI is updated
       await refreshData();
     } catch (err) {
       console.error('Form submission error:', err);
@@ -81,31 +58,39 @@ const HomeRentsContainer = () => {
   };
 
   const handleDelete = (id) => {
-    console.log('Initiating delete for:', id);
     setDeleteDialog({ isOpen: true, id });
   };
 
   const confirmDelete = async () => {
-    if (deleteDialog.id) {
-      try {
-        await deleteItem(deleteDialog.id);
-        setDeleteDialog({ isOpen: false, id: null });
-        // Refresh data to ensure UI is updated
-        await refreshData();
-      } catch (error) {
-        console.error('Delete failed:', error);
-        alert('Failed to delete item. Please try again.');
-      }
+    if (deleteDialog.id !== null) {
+      await deleteItem(deleteDialog.id);
+      setDeleteDialog({ isOpen: false, id: null });
+      await refreshData();
     }
   };
 
   const handleExport = () => {
-    try {
-      exportHomeRentsToExcel(items);
-    } catch (error) {
-      console.error('Export error:', error);
-      alert('Failed to export data to Excel. Please try again.');
-    }
+    // Simple CSV export
+    const headers = ['Name', 'ID', 'Division', 'Start Date', 'End Date', 'Remaining Days', 'Status'];
+    const csvRows = [
+      headers.join(','),
+      ...filteredItems.map(item => [
+        item.name,
+        item.nin,
+        item.division,
+        item.startDate,
+        item.endDate,
+        item.remainingDays || '',
+        item.status
+      ].join(','))
+    ];
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `social-insurance-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
   };
 
   if (loading) {
@@ -128,15 +113,15 @@ const HomeRentsContainer = () => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <h2 className="text-xl font-semibold">
-          Home Rentals
+          Social Insurance
         </h2>
         <div className="flex flex-wrap gap-2">
-          <ExportButton onClick={handleExport} label="Export Home Rentals" />
+          <ExportButton onClick={handleExport} label="Export Records" />
           <button
             onClick={handleCreate}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            Add Home Rental
+            Add Record
           </button>
         </div>
       </div>
@@ -147,9 +132,16 @@ const HomeRentsContainer = () => {
         filterStatus={filterStatus}
         onFilterChange={setFilterStatus}
         totalItems={items.length}
+        statusOptions={[
+          { value: 'all', label: 'All Status' },
+          { value: 'active', label: 'Active' },
+          { value: 'expiring-soon', label: 'Expiring Soon' },
+          { value: 'expired', label: 'Expired' }
+        ]}
+        searchPlaceholder="Search by name, ID, or division..."
       />
 
-      <HomeRentsTable
+      <SocialInsuranceTable
         data={filteredItems}
         onEdit={handleEdit}
         onDelete={handleDelete}
@@ -157,10 +149,10 @@ const HomeRentsContainer = () => {
 
       <FormDialog
         isOpen={formDialog.isOpen}
+        title={formDialog.data ? 'Edit Social Insurance' : 'Add Social Insurance'}
         onClose={() => setFormDialog({ isOpen: false, data: null })}
-        title={formDialog.data ? 'Edit Home Rental' : 'Add Home Rental'}
       >
-        <HomeRentForm
+        <SocialInsuranceForm
           initialData={formDialog.data}
           onSubmit={handleSubmit}
           onCancel={() => setFormDialog({ isOpen: false, data: null })}
@@ -169,8 +161,8 @@ const HomeRentsContainer = () => {
 
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
-        title="Confirm Delete"
-        message="Are you sure you want to delete this rental property?"
+        title="Delete Social Insurance Record"
+        message="Are you sure you want to delete this social insurance record? This action cannot be undone."
         onConfirm={confirmDelete}
         onCancel={() => setDeleteDialog({ isOpen: false, id: null })}
       />
@@ -178,4 +170,4 @@ const HomeRentsContainer = () => {
   );
 };
 
-export default HomeRentsContainer;
+export default SocialInsuranceContainer;

@@ -14,6 +14,10 @@ export const useDataManagement = (type) => {
         return '/vehicles';
       case 'electricity':
         return '/electricity';
+      case 'absher':
+        return '/absher';
+      case 'socialInsurance':
+        return '/social-insurance'; // Match backend route
       default:
         return `/${type}s`;
     }

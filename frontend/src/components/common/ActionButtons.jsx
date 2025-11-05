@@ -5,7 +5,7 @@ import AttachmentsDialog from './AttachmentsDialog';
 const ActionButtons = ({ onEdit, onDelete, attachments = [] }) => {
   const [showAttachments, setShowAttachments] = useState(false);
 
-  // If both onEdit and onDelete are null (Guest mode), show read-only message
+  // If both onEdit and onDelete are null, show read-only message
   if (!onEdit && !onDelete) {
     return (
       <div className="text-xs text-gray-400 italic">

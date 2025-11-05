@@ -1,9 +1,9 @@
 import React from 'react';
 
-const FormActions = ({ onCancel, submitText, isEdit }) => {
+const FormActions = ({ onCancel, submitText = 'Save', isEdit }) => {
 return (
 <div className="flex gap-3 pt-4">
-      <button type="submit"         className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+      <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
             {isEdit ? 'Update' : submitText}
       </button>
       <button

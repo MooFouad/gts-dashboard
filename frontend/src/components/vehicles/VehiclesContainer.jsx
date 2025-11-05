@@ -7,14 +7,13 @@ import Toolbar from '../layout/Toolbar';
 import ExportButton from '../common/ExportButton';
 import { useDataManagement } from '../../hooks/useDataManagement';
 import { useAuth } from '../../contexts/AuthContext';
-import { exportVehiclesToExcel } from '../../utils/excelUtils';
+import { exportVehiclesToExcel } from '../../utils/excel/excelUtils';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const VehiclesContainer = () => {
   const { user } = useAuth();
-  const isGuest = user?.role === 'guest';
   const [formDialog, setFormDialog] = useState({ isOpen: false, data: null });
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
   const [searchTerm, setSearchTerm] = useState('');
@@ -210,18 +209,16 @@ const VehiclesContainer = () => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <h2 className="text-xl font-semibold">
-          Vehicles {isGuest && <span className="text-sm text-gray-500 font-normal">(Demo Mode - Read Only)</span>}
+          Vehicles
         </h2>
         <div className="flex flex-wrap gap-2">
           <ExportButton onClick={handleExport} label="Export Vehicles" />
-          {!isGuest && (
-            <button
-              onClick={handleCreate}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Add Vehicle
-            </button>
-          )}
+          <button
+            onClick={handleCreate}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Add Vehicle
+          </button>
         </div>
       </div>
 
@@ -235,8 +232,8 @@ const VehiclesContainer = () => {
 
       <VehiclesTable
         data={filteredItems}
-        onEdit={!isGuest ? handleEdit : null}
-        onDelete={!isGuest ? handleDelete : null}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
       />
 
       <FormDialog

@@ -59,13 +59,3 @@ coverage/
 # Misc
 .cache/
 .parcel-cache/
-
-# Documentation and text files (local only)
-*.txt
-*.md
-*.bat
-*.claude
-*.bat
-
-# Allow project README if needed in future
-!README.md

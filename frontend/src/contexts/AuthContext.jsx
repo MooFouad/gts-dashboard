@@ -106,30 +106,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginAsGuest = async () => {
-    try {
-      const response = await api.post('/auth/guest');
-      // Backend returns { success: true, data: { user: {...}, token: '...' } }
-      const userData = response.data?.user || response.user;
-      const authToken = response.data?.token || response.token;
-
-      if (!authToken) {
-        throw new Error('No token received from server');
-      }
-
-      localStorage.setItem('token', authToken);
-      setUser(userData);
-      setIsAuthenticated(true);
-
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message || 'Guest login failed'
-      };
-    }
-  };
-
   const logout = async () => {
     try {
       // Call backend logout endpoint (optional, for tracking)
@@ -148,7 +124,6 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     loading,
     login,
-    loginAsGuest,
     register,
     logout,
     checkAuth

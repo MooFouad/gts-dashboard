@@ -6,7 +6,11 @@ import StatusLegend from './components/common/StatusLegend';
 import VehiclesContainer from './components/vehicles/VehiclesContainer';
 import HomeRentsContainer from './components/homeRents/HomeRentsContainer';
 import ElectricityContainer from './components/electricity/ElectricityContainer';
-import { vehicleService, homeRentService, electricityService } from './services';
+// Temporarily disabled for production - pending bug fixes
+// import AbsherContainer from './components/absher/AbsherContainer';
+import SocialInsuranceContainer from './components/socialInsurance/SocialInsuranceContainer';
+import { vehicleService, homeRentService, electricityService, socialInsuranceService } from './services';
+// import { absherService } from './services';
 
 // Lazy load notification components to prevent errors
 const NotificationSettings = React.lazy(() =>
@@ -28,23 +32,29 @@ const App = () => {
   const [counts, setCounts] = useState({
     vehicles: 0,
     homeRents: 0,
-    electricity: 0
+    electricity: 0,
+    // absher: 0,
+    socialInsurance: 0
   });
 
   useEffect(() => {
     // Fetch initial counts from API
     const fetchCounts = async () => {
       try {
-        const [vehiclesCount, homeRentsCount, electricityCount] = await Promise.all([
+        const [vehiclesCount, homeRentsCount, electricityCount, socialInsuranceCount] = await Promise.all([
           vehicleService.getCount(),
           homeRentService.getCount(),
-          electricityService.getCount()
+          electricityService.getCount(),
+          // absherService.getCount(),
+          socialInsuranceService.getCount()
         ]);
 
         setCounts({
           vehicles: vehiclesCount.count,
           homeRents: homeRentsCount.count,
-          electricity: electricityCount.count
+          electricity: electricityCount.count,
+          // absher: absherCount.count,
+          socialInsurance: socialInsuranceCount.count
         });
       } catch (error) {
         console.error('Error fetching counts:', error);
@@ -86,6 +96,8 @@ const App = () => {
             vehiclesCount={counts.vehicles}
             homeRentsCount={counts.homeRents}
             electricityCount={counts.electricity}
+            // absherCount={counts.absher}
+            socialInsuranceCount={counts.socialInsurance}
           />
           
           <div className="flex gap-2">
@@ -144,6 +156,15 @@ const App = () => {
 
         <div className={activeTab === 'electricity' ? 'block' : 'hidden'}>
           <ElectricityContainer />
+        </div>
+
+        {/* Temporarily disabled for production - pending bug fixes */}
+        {/* <div className={activeTab === 'absher' ? 'block' : 'hidden'}>
+          <AbsherContainer />
+        </div> */}
+
+        <div className={activeTab === 'socialInsurance' ? 'block' : 'hidden'}>
+          <SocialInsuranceContainer />
         </div>
       </div>
     </div>

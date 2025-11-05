@@ -7,7 +7,6 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "dev:dns-fix": "set NODE_OPTIONS=--dns-result-order=ipv4first && nodemon server.js",
-    "mock": "node server-no-db.js",
     "seed": "node scripts/seedDatabase.js",
     "backup": "node scripts/backupDatabase.js",
     "backup:mongoose": "node scripts/backupDatabase.js --mongoose",
