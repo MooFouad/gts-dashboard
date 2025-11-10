@@ -422,7 +422,7 @@ const AbsherContainer = () => {
 
   const getEarliestExpiry = (record) => {
     // Use registration expiry date (renewalExpiryDate)
-    const expiryDate = record.registrationExpiryDate;
+    const expiryDate = record.renewalExpiryDate || record.expiryDate;
 
     if (!expiryDate || expiryDate === 'N/A') return null;
 
@@ -471,7 +471,7 @@ const AbsherContainer = () => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <h2 className="text-xl font-semibold">
-          Absher Vehicles ({items.length})
+          Tamm Vehicles ({items.length})
         </h2>
         <div className="flex flex-wrap gap-2">
           <button

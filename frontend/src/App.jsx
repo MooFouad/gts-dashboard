@@ -24,7 +24,7 @@ const NotificationDiagnostics = React.lazy(() =>
 );
 
 const App = () => {
-  const [activeTab, setActiveTab] = useState('vehicles');
+  const [activeTab, setActiveTab] = useState('absher');
   const [showSettings, setShowSettings] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [counts, setCounts] = useState({
@@ -144,20 +144,21 @@ const App = () => {
       )}
 
       <div className="p-2 sm:p-4 overflow-x-auto">
-        <div className={activeTab === 'vehicles' ? 'block' : 'hidden'}>
+        {/* replaced by Tamm api data */}
+        {/* <div className={activeTab === 'vehicles' ? 'block' : 'hidden'}>
           <VehiclesContainer />
-        </div>
+        </div> */}
 
+          <div className={activeTab === 'absher' ? 'block' : 'hidden'}>
+          <AbsherContainer />
+        </div>
+        
         <div className={activeTab === 'homeRents' ? 'block' : 'hidden'}>
           <HomeRentsContainer />
         </div>
 
         <div className={activeTab === 'electricity' ? 'block' : 'hidden'}>
           <ElectricityContainer />
-        </div>
-
-        <div className={activeTab === 'absher' ? 'block' : 'hidden'}>
-          <AbsherContainer />
         </div>
 
         <div className={activeTab === 'socialInsurance' ? 'block' : 'hidden'}>

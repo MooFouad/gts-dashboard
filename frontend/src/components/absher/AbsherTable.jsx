@@ -1,6 +1,4 @@
 import React from 'react';
-import ActionButtons from '../common/ActionButtons';
-import ExpiryIndicator from '../common/ExpiryIndicator';
 import { getRowColorClass } from '../../utils/styleUtils';
 import { formatDate, calculateRemainingDays } from '../../utils/dateUtils';
 
@@ -88,15 +86,12 @@ const AbsherTable = ({ data, onEdit, onDelete }) => {
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
               Days Until Expiry
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Actions
-            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
           {data.length === 0 ? (
             <tr>
-              <td colSpan="17" className="px-4 py-8 text-center text-gray-500">
+              <td colSpan="16" className="px-4 py-8 text-center text-gray-500">
                 No Absher records found
               </td>
             </tr>
@@ -163,12 +158,6 @@ const AbsherTable = ({ data, onEdit, onDelete }) => {
                         </span>
                       )
                     ) : '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    <ActionButtons
-                      onEdit={() => onEdit(record)}
-                      onDelete={() => onDelete(record._id)}
-                    />
                   </td>
                 </tr>
               );

@@ -19,12 +19,20 @@ const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, 
     <div className="border-b overflow-x-auto bg-gray-50 sticky top-0 z-10 shadow-sm">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-wrap sm:flex-nowrap min-w-max sm:min-w-0 gap-2 sm:gap-4">
-          <button
+          {/* replaced by Tamm */}
+          {/* <button
             onClick={() => handleTabChange('vehicles')}
             className={tabClasses('vehicles')}
           >
             <Car size={20} />
             <span className="capitalize">Vehicles ({vehiclesCount})</span>
+          </button> */}
+          <button
+            onClick={() => handleTabChange('absher')}
+            className={tabClasses('absher')}
+          >
+            <Car size={20} />
+            <span>Tamm ({absherCount})</span>
           </button>
 
           <button
@@ -42,15 +50,6 @@ const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, 
             <Zap size={20} />
             <span>Electricity ({electricityCount})</span>
           </button>
-
-          <button
-            onClick={() => handleTabChange('absher')}
-            className={tabClasses('absher')}
-          >
-            <FileText size={20} />
-            <span>Absher ({absherCount})</span>
-          </button>
-
           <button
             onClick={() => handleTabChange('socialInsurance')}
             className={tabClasses('socialInsurance')}
