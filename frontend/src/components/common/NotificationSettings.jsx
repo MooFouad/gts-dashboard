@@ -13,7 +13,9 @@ const NotificationSettings = () => {
   const [notificationTypes, setNotificationTypes] = useState({
     vehicle: true,
     homeRent: true,
-    electricity: true
+    electricity: true,
+    absher: true,
+    socialInsurance: true
   });
 
   const addDebugLog = (msg) => {
@@ -388,6 +390,42 @@ const NotificationSettings = () => {
                   </p>
                 </div>
               </label>
+
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={notificationTypes.absher}
+                  onChange={(e) => setNotificationTypes({ ...notificationTypes, absher: e.target.checked })}
+                  disabled={isSubscribed}
+                  className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900 group-hover:text-blue-700">
+                    📄 Absher Notifications
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    Registration, inspection, and license expiration alerts
+                  </p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={notificationTypes.socialInsurance}
+                  onChange={(e) => setNotificationTypes({ ...notificationTypes, socialInsurance: e.target.checked })}
+                  disabled={isSubscribed}
+                  className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900 group-hover:text-blue-700">
+                    🛡️ Social Insurance Notifications
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    Social insurance expiration alerts
+                  </p>
+                </div>
+              </label>
             </div>
             <p className="text-xs text-gray-500 mt-3">
               ⚠️ Select at least one notification type
@@ -501,16 +539,20 @@ const NotificationSettings = () => {
               </h3>
               <div className="space-y-2">
                 {subscriptions.map((subscription) => {
-                  const types = subscription.notificationTypes || ['vehicle', 'homeRent', 'electricity'];
+                  const types = subscription.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance'];
                   const typeIcons = {
                     vehicle: '🚗',
                     homeRent: '🏠',
-                    electricity: '⚡'
+                    electricity: '⚡',
+                    absher: '📄',
+                    socialInsurance: '🛡️'
                   };
                   const typeLabels = {
                     vehicle: 'Vehicles',
                     homeRent: 'Home Rent',
-                    electricity: 'Electricity'
+                    electricity: 'Electricity',
+                    absher: 'Absher',
+                    socialInsurance: 'Social Insurance'
                   };
 
                   return (
@@ -570,7 +612,7 @@ const NotificationSettings = () => {
               <li>• <strong>Daily checks at 9:00 AM</strong> - Automatic notification system runs</li>
               <li>• <strong>Both channels</strong> - Browser push AND email notifications sent together</li>
               <li>• <strong>Repeated daily</strong> - Starting 10 days before expiration until expiration day</li>
-              <li>• <strong>All categories</strong> - Vehicles, rentals, and electricity bills</li>
+              <li>• <strong>All categories</strong> - Vehicles, rentals, electricity bills, Absher, and social insurance</li>
               <li>• <strong>One subscription</strong> - No need for separate email/browser subscriptions</li>
             </ul>
           </div>

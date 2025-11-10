@@ -242,6 +242,99 @@ export const exportSocialInsuranceToExcel = (records) => {
 };
 
 /**
+ * Export Absher vehicle data to Excel
+ */
+export const exportAbsherToExcel = (records) => {
+  if (!records || records.length === 0) {
+    alert('No data to export');
+    return;
+  }
+
+  // Calculate days until expiry for each record
+  const calculateDaysUntilExpiry = (record) => {
+    const expiryDate = record.renewalExpiryDate || record.registrationExpiryDate || record.expiryDate;
+    if (!expiryDate || expiryDate === 'N/A') return 'N/A';
+
+    const expiry = new Date(expiryDate);
+    const today = new Date();
+    const diffTime = expiry - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return 'Expired';
+    return `${diffDays} days`;
+  };
+
+  // Format plateInfo from "ببأ_7562_1" to "ب ب أ 7562"
+  const formatPlateInfo = (plateInfo) => {
+    if (!plateInfo || plateInfo === '-') return '';
+
+    // Split by underscores
+    const parts = plateInfo.split('_');
+
+    // We only want the first two parts (letters and number, not the trailing type code)
+    const lettersPart = parts[0] || '';
+    const numberPart = parts[1] || '';
+
+    // Separate Arabic letters with spaces
+    if (lettersPart && /[\u0600-\u06FF]/.test(lettersPart)) {
+      const separated = lettersPart.split('').join(' ');
+      return `${separated} ${numberPart}`;
+    }
+
+    // If no Arabic letters, just join with space
+    return `${lettersPart} ${numberPart}`;
+  };
+
+  // Export all API fields
+  const exportData = records.map(record => ({
+    'Sequence Number': record.sequenceNumber || '',
+    'Plate Info': formatPlateInfo(record.plateInfo || record.plateNumber),
+    'Plate Type': record.plateType?.nameEn || record.plateTypeCode || '',
+    'Owner Name': record.ownerName || record.name || '',
+    'Owner ID Number': record.ownerIdNumber || '',
+    'Maker': record.maker || '',
+    'Model': record.model || '',
+    'Model Year': record.modelYear || '',
+    'Major Color': record.majorColor || '',
+    'Created Date': record.createdDate || '',
+    'Renewal Expiry Date': record.renewalExpiryDate || record.registrationExpiryDate || record.expiryDate || '',
+    'Actual Driver ID': record.actualDriverIdNumber || '',
+    'Actual Driver Name': record.actualDriverName || '',
+    'Operator ID': record.operatorIdNumber || '',
+    'Branch Name': record.branchName?.en || record.branchName?.ar || '',
+    'Days Until Expiry': calculateDaysUntilExpiry(record)
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(exportData);
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 18 }, // Sequence Number
+    { wch: 20 }, // Plate Info
+    { wch: 18 }, // Plate Type
+    { wch: 30 }, // Owner Name
+    { wch: 18 }, // Owner ID Number
+    { wch: 15 }, // Maker
+    { wch: 15 }, // Model
+    { wch: 15 }, // Model Year
+    { wch: 15 }, // Major Color
+    { wch: 20 }, // Created Date
+    { wch: 20 }, // Renewal Expiry Date
+    { wch: 18 }, // Actual Driver ID
+    { wch: 25 }, // Actual Driver Name
+    { wch: 15 }, // Operator ID
+    { wch: 25 }, // Branch Name
+    { wch: 18 }  // Days Until Expiry
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Absher Vehicles');
+
+  const timestamp = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Absher_Vehicles_Export_${timestamp}.xlsx`);
+};
+
+/**
  * Export all data to a single Excel file with multiple sheets (only table columns)
  */
 export const exportAllDataToExcel = (vehicles, homeRents, electricity) => {

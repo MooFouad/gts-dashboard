@@ -6,11 +6,9 @@ import StatusLegend from './components/common/StatusLegend';
 import VehiclesContainer from './components/vehicles/VehiclesContainer';
 import HomeRentsContainer from './components/homeRents/HomeRentsContainer';
 import ElectricityContainer from './components/electricity/ElectricityContainer';
-// Temporarily disabled for production - pending bug fixes
-// import AbsherContainer from './components/absher/AbsherContainer';
+import AbsherContainer from './components/absher/AbsherContainer';
 import SocialInsuranceContainer from './components/socialInsurance/SocialInsuranceContainer';
-import { vehicleService, homeRentService, electricityService, socialInsuranceService } from './services';
-// import { absherService } from './services';
+import { vehicleService, homeRentService, electricityService, socialInsuranceService, absherService } from './services';
 
 // Lazy load notification components to prevent errors
 const NotificationSettings = React.lazy(() =>
@@ -33,7 +31,7 @@ const App = () => {
     vehicles: 0,
     homeRents: 0,
     electricity: 0,
-    // absher: 0,
+    absher: 0,
     socialInsurance: 0
   });
 
@@ -41,11 +39,11 @@ const App = () => {
     // Fetch initial counts from API
     const fetchCounts = async () => {
       try {
-        const [vehiclesCount, homeRentsCount, electricityCount, socialInsuranceCount] = await Promise.all([
+        const [vehiclesCount, homeRentsCount, electricityCount, absherCount, socialInsuranceCount] = await Promise.all([
           vehicleService.getCount(),
           homeRentService.getCount(),
           electricityService.getCount(),
-          // absherService.getCount(),
+          absherService.getCount(),
           socialInsuranceService.getCount()
         ]);
 
@@ -53,7 +51,7 @@ const App = () => {
           vehicles: vehiclesCount.count,
           homeRents: homeRentsCount.count,
           electricity: electricityCount.count,
-          // absher: absherCount.count,
+          absher: absherCount.count,
           socialInsurance: socialInsuranceCount.count
         });
       } catch (error) {
@@ -68,7 +66,7 @@ const App = () => {
       const { type, count } = event.detail;
       setCounts(prevCounts => ({
         ...prevCounts,
-        [type + 's']: count
+        [type]: count
       }));
     };
 
@@ -96,7 +94,7 @@ const App = () => {
             vehiclesCount={counts.vehicles}
             homeRentsCount={counts.homeRents}
             electricityCount={counts.electricity}
-            // absherCount={counts.absher}
+            absherCount={counts.absher}
             socialInsuranceCount={counts.socialInsurance}
           />
           
@@ -158,10 +156,9 @@ const App = () => {
           <ElectricityContainer />
         </div>
 
-        {/* Temporarily disabled for production - pending bug fixes */}
-        {/* <div className={activeTab === 'absher' ? 'block' : 'hidden'}>
+        <div className={activeTab === 'absher' ? 'block' : 'hidden'}>
           <AbsherContainer />
-        </div> */}
+        </div>
 
         <div className={activeTab === 'socialInsurance' ? 'block' : 'hidden'}>
           <SocialInsuranceContainer />

@@ -1,6 +1,111 @@
 const mongoose = require('mongoose');
 
 const absherSchema = new mongoose.Schema({
+  // ============================================
+  // ORIGINAL API FIELDS FROM ISTEMARAH RENEWAL
+  // ============================================
+
+  // Sequence Number (رقم التسلسل)
+  sequenceNumber: {
+    type: Number,
+    trim: true
+  },
+
+  // Plate Info (معلومات اللوحة)
+  plateInfo: {
+    type: String,
+    trim: true
+  },
+
+  // Plate Type (نوع اللوحة)
+  plateType: {
+    type: mongoose.Schema.Types.Mixed // Object with code, nameAr, nameEn
+  },
+
+  // Plate Type Code (رمز نوع اللوحة)
+  plateTypeCode: {
+    type: Number
+  },
+
+  // Maker (الصانع)
+  maker: {
+    type: String,
+    trim: true
+  },
+
+  // Model (الطراز)
+  model: {
+    type: String,
+    trim: true
+  },
+
+  // Model Year (سنة الصنع)
+  modelYear: {
+    type: Number
+  },
+
+  // Major Color (اللون الرئيسي)
+  majorColor: {
+    type: String,
+    trim: true
+  },
+
+  // Created Date (تاريخ الإنشاء)
+  createdDate: {
+    type: Date,
+    set: v => v ? new Date(v) : null
+  },
+
+  // Renewal Expiry Date (تاريخ انتهاء التجديد)
+  renewalExpiryDate: {
+    type: Date,
+    set: v => v ? new Date(v) : null
+  },
+
+  // Actual Driver ID Number (رقم هوية السائق الفعلي)
+  actualDriverIdNumber: {
+    type: String,
+    trim: true
+  },
+
+  // Actual Driver Name (اسم السائق الفعلي)
+  actualDriverName: {
+    type: String,
+    trim: true
+  },
+
+  // Owner ID Number (رقم هوية المالك)
+  ownerIdNumber: {
+    type: String,
+    trim: true
+  },
+
+  // Owner Name (اسم المالك)
+  ownerName: {
+    type: String,
+    trim: true
+  },
+
+  // Trace ID (معرف التتبع)
+  traceId: {
+    type: String,
+    trim: true
+  },
+
+  // Operator ID Number (رقم هوية المشغل)
+  operatorIdNumber: {
+    type: Number
+  },
+
+  // Branch Name (اسم الفرع)
+  branchName: {
+    type: mongoose.Schema.Types.Mixed // Object with ar and en
+  },
+
+  // ============================================
+  // LEGACY FIELDS FOR COMPATIBILITY
+  // ============================================
+
   // ID/Reference Number (رقم المرجع / رقم الاستمارة)
   referenceNumber: {
     type: String,
@@ -24,7 +129,7 @@ const absherSchema = new mongoose.Schema({
   // Registration Expiry Date (تاريخ انتهاء الاستمارة)
   expiryDate: {
     type: Date,
-    required: false, // Changed to false to allow syncing from vehicles without dates
+    required: false,
     set: v => v ? new Date(v) : null
   },
 
@@ -40,27 +145,25 @@ const absherSchema = new mongoose.Schema({
     set: v => v ? new Date(v) : null
   },
 
-  // Additional optional fields
+  // Plate Number (رقم اللوحة)
   plateNumber: {
     type: String,
     trim: true
   },
 
-  ownerName: {
-    type: String,
-    trim: true
-  },
-
+  // Owner ID (old field)
   ownerId: {
     type: String,
     trim: true
   },
 
+  // Vehicle Type
   vehicleType: {
     type: String,
     trim: true
   },
 
+  // Notes
   notes: {
     type: String,
     trim: true

@@ -116,6 +116,19 @@ router.get('/test-connection', async (req, res, next) => {
   }
 });
 
+// GET count (MUST be before /:id to avoid route matching conflict)
+router.get('/count/total', async (req, res, next) => {
+  try {
+    const count = await Absher.countDocuments();
+    res.json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET all absher records
 router.get('/', async (req, res, next) => {
   try {
@@ -126,6 +139,7 @@ router.get('/', async (req, res, next) => {
 
     const formattedRecords = absherRecords.map(record => ({
       ...record,
+      // Format all date fields
       issueDate: record.issueDate ?
         new Date(record.issueDate).toISOString().split('T')[0] : null,
       expiryDate: record.expiryDate ?
@@ -134,6 +148,10 @@ router.get('/', async (req, res, next) => {
         new Date(record.inspectionExpiryDate).toISOString().split('T')[0] : null,
       licenseExpiryDate: record.licenseExpiryDate ?
         new Date(record.licenseExpiryDate).toISOString().split('T')[0] : null,
+      createdDate: record.createdDate ?
+        new Date(record.createdDate).toISOString().split('T')[0] : null,
+      renewalExpiryDate: record.renewalExpiryDate ?
+        new Date(record.renewalExpiryDate).toISOString().split('T')[0] : null,
     }));
 
     res.json({
@@ -218,19 +236,6 @@ router.delete('/:id', async (req, res, next) => {
       success: true,
       message: 'Absher record deleted successfully',
       data: { id: req.params.id }
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// GET count
-router.get('/count/total', async (req, res, next) => {
-  try {
-    const count = await Absher.countDocuments();
-    res.json({
-      success: true,
-      count
     });
   } catch (error) {
     next(error);
@@ -674,6 +679,34 @@ router.post('/istemarah/submit', async (req, res, next) => {
   }
 });
 
+// Load Profile API - Get User ID for integrator mode
+router.post('/profile/load', async (req, res, next) => {
+  try {
+    const { userIdNumber, accountMoiNumber } = req.body;
+
+    if (!userIdNumber || !accountMoiNumber) {
+      return next(new AppError('User ID Number and Account MOI Number are required', 400));
+    }
+
+    console.log('🔍 Loading user profile from Absher API');
+
+    const profileData = await absherService.loadProfile(
+      userIdNumber,
+      accountMoiNumber
+    );
+
+    res.json({
+      success: true,
+      message: 'Profile loaded successfully',
+      data: profileData
+    });
+
+  } catch (error) {
+    console.error('❌ Error loading profile:', error);
+    next(new AppError(`Failed to load profile: ${error.message}`, 500));
+  }
+});
+
 // STEP 3: Search renewed Istemarah records
 router.post('/istemarah/search', async (req, res, next) => {
   try {
@@ -733,16 +766,102 @@ router.post('/istemarah/renew-complete', async (req, res, next) => {
   }
 });
 
-// Search ALL Istemarah records (no filter)
+// Test Complete Flow: LoadProfile + Search Istemarah (Correct implementation)
+router.post('/istemarah/test-search-with-profile', async (req, res, next) => {
+  try {
+    const {
+      userIdNumber,
+      accountMoiNumber,
+      plateInfo = '',
+      page = 0,
+      size = 100
+    } = req.body;
+
+    // Use environment variables as fallback
+    const finalUserIdNumber = userIdNumber || process.env.TAMM_USER_ID_NUMBER;
+    const finalAccountMoiNumber = accountMoiNumber || process.env.TAMM_CUSTOMER_ID;
+
+    if (!finalUserIdNumber || !finalAccountMoiNumber) {
+      return next(new AppError(
+        'User ID Number and Account MOI Number are required (in body or TAMM_USER_ID_NUMBER/TAMM_CUSTOMER_ID env vars)',
+        400
+      ));
+    }
+
+    console.log('\n' + '🧪'.repeat(40));
+    console.log('🧪 TESTING COMPLETE FLOW: LoadProfile + Search Istemarah');
+    console.log('🧪'.repeat(40));
+
+    // STEP 1: Load Profile to get correct User ID
+    console.log('\n📋 STEP 1: Loading user profile...');
+    const profileData = await absherService.loadProfile(
+      finalUserIdNumber,
+      finalAccountMoiNumber
+    );
+
+    const userId = profileData.userId;
+    console.log(`✅ Got User ID from LoadProfile: ${userId}`);
+
+    // Check for messages or actions
+    if (profileData.message) {
+      console.log('⚠️  Profile Message:', profileData.message);
+    }
+    if (profileData.actions && profileData.actions.length > 0) {
+      console.log('⚠️  Actions Required:', profileData.actions);
+    }
+
+    // STEP 2: Search Istemarah using correct User ID
+    console.log('\n📋 STEP 2: Searching Istemarah with correct User ID...');
+    const searchResult = await absherService.searchRenewedIstemarah(
+      plateInfo,
+      userId, // Use the User ID from LoadProfile, not MOI number!
+      page,
+      size
+    );
+
+    console.log('✅ Search completed successfully');
+    console.log('🧪'.repeat(40) + '\n');
+
+    res.json({
+      success: true,
+      message: 'Test completed - Profile loaded and search executed',
+      data: {
+        profile: profileData,
+        searchResults: searchResult
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error in test flow:', error);
+    next(new AppError(`Test flow failed: ${error.message}`, 500));
+  }
+});
+
+// Search ALL Istemarah records (no filter) - FIXED: Uses LoadProfile
 router.post('/istemarah/search-all', async (req, res, next) => {
   try {
-    const { integratorUserId = '7001486054', page = 0, size = 10 } = req.body;
+    const {
+      userIdNumber,
+      accountMoiNumber,
+      page = 0,
+      size = 100
+    } = req.body;
+
+    // Use environment variables as fallback
+    const finalUserIdNumber = userIdNumber || process.env.TAMM_USER_ID_NUMBER;
+    const finalAccountMoiNumber = accountMoiNumber || process.env.TAMM_CUSTOMER_ID;
+
+    if (!finalUserIdNumber || !finalAccountMoiNumber) {
+      return next(new AppError(
+        'User ID Number and Account MOI Number are required (in body or TAMM_USER_ID_NUMBER/TAMM_CUSTOMER_ID env vars)',
+        400
+      ));
+    }
 
     console.log('🔍 Searching all Istemarah records from Absher API');
-    console.log(`📋 Integrator User ID: ${integratorUserId}`);
     console.log(`📋 Page: ${page}, Size: ${size}`);
 
-    // Test connection first to fail fast
+    // Test connection first
     console.log('🔌 Testing Absher API connection...');
     try {
       await absherService.generateAccessToken();
@@ -750,7 +869,6 @@ router.post('/istemarah/search-all', async (req, res, next) => {
     } catch (error) {
       console.error('❌ Absher API connection failed:', error.message);
 
-      // Check if it's a network/timeout issue
       if (error.message.includes('ETIMEDOUT') || error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
         return res.status(503).json({
           success: false,
@@ -769,8 +887,27 @@ router.post('/istemarah/search-all', async (req, res, next) => {
       throw error;
     }
 
-    // Search all Istemarah records
-    const result = await absherService.searchAllIstemarah(integratorUserId, page, size);
+    // STEP 1: Load Profile to get correct User ID
+    console.log('📋 STEP 1: Loading user profile to get correct User ID...');
+    const profileData = await absherService.loadProfile(
+      finalUserIdNumber,
+      finalAccountMoiNumber
+    );
+
+    const userId = profileData.userId;
+    console.log(`✅ Got User ID from LoadProfile: ${userId}`);
+
+    // Check for messages or actions
+    if (profileData.message) {
+      console.log('⚠️  Profile Message:', profileData.message);
+    }
+    if (profileData.actions && profileData.actions.length > 0) {
+      console.log('⚠️  Actions Required:', profileData.actions);
+    }
+
+    // STEP 2: Search Istemarah using correct User ID
+    console.log('📋 STEP 2: Searching all Istemarah records with correct User ID...');
+    const result = await absherService.searchAllIstemarah(userId, page, size);
 
     console.log(`✅ Successfully fetched ${result.content?.length || 0} records`);
     console.log(`📊 Total records available: ${result.totalElements || 0}`);
@@ -791,6 +928,217 @@ router.post('/istemarah/search-all', async (req, res, next) => {
   } catch (error) {
     console.error('❌ Error searching all Istemarah records:', error);
     next(new AppError(`Failed to search Istemarah records: ${error.message}`, 500));
+  }
+});
+
+// Quick switch to Production environment
+router.post('/config/switch-to-production', async (req, res, next) => {
+  try {
+    console.log('🔄 Switching Absher configuration to Production...');
+
+    const AbsherConfig = require('../models/AbsherConfig');
+    const config = await AbsherConfig.findOne({ status: 'active' });
+
+    if (!config) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active Absher configuration found. Please configure via UI first.'
+      });
+    }
+
+    console.log('📋 Current config:');
+    console.log(`   Auth Server: ${config.authorizationServer}`);
+    console.log(`   Realm: ${config.realmName}`);
+
+    // Update to Production
+    config.authorizationServer = 'https://idp.elm.sa';
+    config.realmName = 'Tamm';
+    config.notes = 'Production Environment - Updated via API';
+    await config.save();
+
+    console.log('✅ Updated to Production:');
+    console.log(`   Auth Server: ${config.authorizationServer}`);
+    console.log(`   Realm: ${config.realmName}`);
+
+    // Reload config in service
+    await absherService.reloadConfig();
+
+    res.json({
+      success: true,
+      message: 'Configuration switched to Production successfully',
+      data: {
+        clientId: '***' + config.clientId.slice(-4),
+        authorizationServer: config.authorizationServer,
+        realmName: config.realmName,
+        status: config.status
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error switching to production:', error);
+    next(new AppError(`Failed to switch to production: ${error.message}`, 500));
+  }
+});
+
+// Quick switch to QA environment
+router.post('/config/switch-to-qa', async (req, res, next) => {
+  try {
+    console.log('🔄 Switching Absher configuration to QA...');
+
+    const AbsherConfig = require('../models/AbsherConfig');
+    const config = await AbsherConfig.findOne({ status: 'active' });
+
+    if (!config) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active Absher configuration found. Please configure via UI first.'
+      });
+    }
+
+    // Update to QA
+    config.authorizationServer = 'https://idp.apps.devocp4.elm.sa';
+    config.realmName = 'Tamm-QA';
+    config.notes = 'QA Environment - Updated via API';
+    await config.save();
+
+    console.log('✅ Updated to QA:');
+    console.log(`   Auth Server: ${config.authorizationServer}`);
+    console.log(`   Realm: ${config.realmName}`);
+
+    // Reload config in service
+    await absherService.reloadConfig();
+
+    res.json({
+      success: true,
+      message: 'Configuration switched to QA successfully',
+      data: {
+        clientId: '***' + config.clientId.slice(-4),
+        authorizationServer: config.authorizationServer,
+        realmName: config.realmName,
+        status: config.status
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error switching to QA:', error);
+    next(new AppError(`Failed to switch to QA: ${error.message}`, 500));
+  }
+});
+
+// Test endpoint: Try to fetch data with MOI number directly (no LoadProfile)
+router.post('/istemarah/test-direct-search', async (req, res, next) => {
+  try {
+    console.log('\n' + '🧪'.repeat(40));
+    console.log('🧪 TESTING DIRECT SEARCH (NO LOADPROFILE)');
+    console.log('🧪'.repeat(40));
+
+    const moiNumber = process.env.TAMM_CUSTOMER_ID || '7001486054';
+
+    console.log(`\n📋 Trying to search with MOI number directly: ${moiNumber}`);
+    console.log(`📋 This will help us see what error/data we get without LoadProfile\n`);
+
+    // Try to search using MOI number as integrator user ID
+    const searchResult = await absherService.searchAllIstemarah(
+      moiNumber, // Using MOI number directly
+      0,
+      100
+    );
+
+    console.log('✅ Search completed successfully!');
+    console.log('🧪'.repeat(40) + '\n');
+
+    res.json({
+      success: true,
+      message: 'Direct search completed (without LoadProfile)',
+      data: searchResult,
+      note: 'This search used MOI number directly as integrator user ID'
+    });
+
+  } catch (error) {
+    console.error('❌ Error in direct search:', error.message);
+    console.error('🧪'.repeat(40) + '\n');
+
+    res.json({
+      success: false,
+      message: 'Direct search failed',
+      error: error.message,
+      errorDetails: error.response?.data || null,
+      note: 'This test shows what happens when using MOI number directly without LoadProfile'
+    });
+  }
+});
+
+// Debug endpoint - Try fetching with different parameters
+router.post('/debug-fetch', async (req, res, next) => {
+  try {
+    console.log('\n' + '🔬'.repeat(40));
+    console.log('🔬 DEBUG: Trying different API fetch methods');
+    console.log('🔬'.repeat(40));
+
+    const results = {};
+
+    // Method 1: Large page size with empty filter
+    console.log('\n📋 Method 1: size=1000, empty filter');
+    try {
+      const result1 = await absherService.searchAllIstemarah('188284', 0, 1000);
+      results.method1 = {
+        totalElements: result1.totalElements,
+        totalPages: result1.totalPages,
+        contentLength: result1.content?.length
+      };
+      console.log(`✅ Method 1: ${result1.totalElements} total, ${result1.content?.length} fetched`);
+    } catch (error) {
+      results.method1 = { error: error.message };
+      console.error(`❌ Method 1 failed: ${error.message}`);
+    }
+
+    // Method 2: Try page 1
+    console.log('\n📋 Method 2: page=1, size=100');
+    try {
+      const result2 = await absherService.searchAllIstemarah('188284', 1, 100);
+      results.method2 = {
+        totalElements: result2.totalElements,
+        totalPages: result2.totalPages,
+        contentLength: result2.content?.length
+      };
+      console.log(`✅ Method 2: ${result2.totalElements} total, ${result2.content?.length} fetched`);
+    } catch (error) {
+      results.method2 = { error: error.message };
+      console.error(`❌ Method 2 failed: ${error.message}`);
+    }
+
+    // Method 3: Small size, multiple pages
+    console.log('\n📋 Method 3: Fetch multiple pages (size=10)');
+    try {
+      let allRecords = [];
+      for (let page = 0; page < 5; page++) {
+        const result = await absherService.searchAllIstemarah('188284', page, 10);
+        allRecords = [...allRecords, ...(result.content || [])];
+        console.log(`   Page ${page}: ${result.content?.length} records`);
+        if (!result.content || result.content.length === 0) break;
+      }
+      results.method3 = {
+        totalFetched: allRecords.length,
+        pages: Math.ceil(allRecords.length / 10)
+      };
+      console.log(`✅ Method 3: ${allRecords.length} total records fetched`);
+    } catch (error) {
+      results.method3 = { error: error.message };
+      console.error(`❌ Method 3 failed: ${error.message}`);
+    }
+
+    console.log('\n' + '🔬'.repeat(40));
+    console.log('🔬 DEBUG RESULTS:');
+    console.log(JSON.stringify(results, null, 2));
+    console.log('🔬'.repeat(40) + '\n');
+
+    res.json({
+      success: true,
+      message: 'Debug fetch completed',
+      results
+    });
+
+  } catch (error) {
+    console.error('❌ Debug fetch failed:', error);
+    next(new AppError(`Debug fetch failed: ${error.message}`, 500));
   }
 });
 

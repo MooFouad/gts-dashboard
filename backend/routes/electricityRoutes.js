@@ -12,11 +12,27 @@ const {
 // GET all electricity bills
 router.get('/', async (req, res, next) => {
   try {
-    const bills = await Electricity.find({}).sort({ createdAt: 1 });
+    const bills = await Electricity.find({})
+      .lean()
+      .sort({ createdAt: 1 })
+      .exec();
     res.json({
       success: true,
       count: bills.length,
       data: bills
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET count (MUST be before /:id to avoid route matching conflict)
+router.get('/count/total', async (req, res, next) => {
+  try {
+    const count = await Electricity.countDocuments();
+    res.json({
+      success: true,
+      count
     });
   } catch (error) {
     next(error);
@@ -110,19 +126,6 @@ router.delete('/:id', deleteElectricityValidator, validate, async (req, res, nex
       success: true,
       message: 'Electricity bill deleted successfully',
       data: { id: req.params.id }
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// GET count
-router.get('/count/total', async (req, res, next) => {
-  try {
-    const count = await Electricity.countDocuments();
-    res.json({
-      success: true,
-      count
     });
   } catch (error) {
     next(error);

@@ -23,6 +23,19 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// GET count (MUST be before /:id to avoid route matching conflict)
+router.get('/count/total', async (req, res, next) => {
+  try {
+    const count = await HomeRent.countDocuments();
+    res.json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET single home rent
 router.get('/:id', async (req, res, next) => {
   try {
@@ -89,19 +102,6 @@ router.delete('/:id', deleteHomeRentValidator, validate, async (req, res, next) 
       success: true,
       message: 'Home rent deleted successfully',
       data: { id: req.params.id }
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// GET count
-router.get('/count/total', async (req, res, next) => {
-  try {
-    const count = await HomeRent.countDocuments();
-    res.json({
-      success: true,
-      count
     });
   } catch (error) {
     next(error);

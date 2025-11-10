@@ -31,7 +31,7 @@ class TammService {
 
         this.config = {
           authUrl: authUrl,
-          apiUrl: process.env.TAMM_API_URL || 'https://tamm-qa-api.apps.devocp4.elm.sa',
+          apiUrl: process.env.TAMM_API_URL || 'https://tamm.api.elm.sa',
           clientId: dbConfig.clientId,
           clientSecret: dbConfig.clientSecret,
           subscriptionKey: process.env.TAMM_SUBSCRIPTION_KEY || '',
@@ -172,6 +172,117 @@ class TammService {
         console.error('Response status:', error.response.status);
       }
       throw new Error(`Failed to authenticate with TAMM API: ${error.message}`);
+    }
+  }
+
+  /**
+   * Load Profile API - Get User ID for integrator mode
+   * According to Profile Management IG: This API must be called when using Client Credentials flow
+   * Returns the User ID that should be used in X-Integrator-User-Id header for subsequent API calls
+   *
+   * @param {string} userIdNumber - National ID / Iqama number (e.g., "1023782800")
+   * @param {string} accountMoiNumber - MOI number (e.g., "7001396900")
+   * @returns {Object} Profile object containing user ID and other profile information
+   */
+  async loadProfile(userIdNumber, accountMoiNumber) {
+    try {
+      console.log('\n' + '='.repeat(80));
+      console.log('🔍 ABSHER API CALL - Load Profile');
+      console.log('='.repeat(80));
+      console.log(`📋 User ID Number: ${userIdNumber}`);
+      console.log(`📋 Account MOI Number: ${accountMoiNumber}`);
+
+      const config = await this.getConfig();
+      const accessToken = await this.generateAccessToken();
+
+      // LoadProfile API endpoint
+      const apiUrl = `${config.apiUrl}/api/v1/integrator/users/profiles/load`;
+
+      const requestBody = {
+        userIdNumber: userIdNumber,
+        accountMoiNumber: accountMoiNumber
+      };
+
+      console.log(`📤 API URL: ${apiUrl}`);
+      console.log(`📦 Request Body:`, JSON.stringify(requestBody, null, 2));
+      console.log(`🚀 Sending LoadProfile request to Absher API...`);
+
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      };
+
+      // Add subscription key if available
+      if (config.subscriptionKey) {
+        headers['Ocp-Apim-Subscription-Key'] = config.subscriptionKey;
+      }
+
+      const response = await axios.post(apiUrl, requestBody, {
+        headers: headers,
+        timeout: 60000
+      });
+
+      console.log(`✅ Response received from Absher API`);
+      console.log(`📊 Response Status: ${response.status}`);
+
+      if (response.data) {
+        console.log('📦 LoadProfile API Response:');
+        console.log('='.repeat(80));
+        console.log(JSON.stringify(response.data, null, 2));
+        console.log('='.repeat(80));
+
+        // Extract user ID from response
+        // Response is an array with profile objects
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          const profile = response.data[0];
+          const userId = profile.user?.id;
+
+          if (userId) {
+            console.log(`✅ User ID extracted: ${userId}`);
+            console.log(`   User Email: ${profile.user?.email || 'N/A'}`);
+            console.log(`   User Type: ${profile.user?.userType || 'N/A'}`);
+            console.log(`   Account MOI: ${profile.user?.branch?.account?.moiNumber || 'N/A'}`);
+
+            // Check for any messages or actions required
+            if (profile.message) {
+              console.log('⚠️  Message from API:');
+              console.log(`   AR: ${profile.message.ar || 'N/A'}`);
+              console.log(`   EN: ${profile.message.en || 'N/A'}`);
+            }
+
+            if (profile.actions && profile.actions.length > 0) {
+              console.log('⚠️  Actions required:', profile.actions.join(', '));
+            }
+
+            console.log('='.repeat(80) + '\n');
+
+            return {
+              userId: userId,
+              profile: profile,
+              message: profile.message,
+              actions: profile.actions
+            };
+          } else {
+            throw new Error('User ID not found in LoadProfile response');
+          }
+        } else {
+          throw new Error('Invalid LoadProfile response format');
+        }
+      } else {
+        throw new Error('Empty response from LoadProfile API');
+      }
+    } catch (error) {
+      console.error('\n' + '❌'.repeat(40));
+      console.error(`❌ ERROR LOADING PROFILE`);
+      console.error('❌'.repeat(40));
+      console.error(`Error Message: ${error.message}`);
+
+      if (error.response) {
+        console.error(`Response Status: ${error.response.status}`);
+        console.error(`Response Data:`, JSON.stringify(error.response.data, null, 2));
+      }
+      console.error('❌'.repeat(40) + '\n');
+      throw error;
     }
   }
 

@@ -19,19 +19,23 @@ const absherConfigSchema = new mongoose.Schema({
     trim: true
   },
 
-  // Authorization Server URL
+  // Authorization Server URL (IdP)
+  // Production: https://idp.elm.sa
+  // QA/Staging: https://idp.apps.devocp4.elm.sa
   authorizationServer: {
     type: String,
     required: true,
-    default: 'https://idp.apps.devocp4.elm.sa',
+    default: 'https://idp.elm.sa',
     trim: true
   },
 
   // Realm Name
+  // Production: Tamm
+  // QA/Staging: Tamm-QA
   realmName: {
     type: String,
     required: true,
-    default: 'Tamm-QA',
+    default: 'Tamm',
     trim: true
   },
 

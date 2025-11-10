@@ -10,11 +10,22 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const AbsherIntegrationSettings = () => {
   const [activeTab, setActiveTab] = useState('smart'); // smart or subscriptions
   const [config, setConfig] = useState({
-    clientId: '3fd125a2',  // معرف الربط (Link ID)
-    clientSecret: '42d53a3e57bfc9e87a7391c3ce633ce1',  // الكتلة السرية
-    authorizationServer: 'https://idp.elm.sa',  // خادم المصادقة للإنتاج
-    realmName: 'Tamm',  // اسم المجال للإنتاج
-    linkId: '3fd125a2',  // نفس معرف الربط
+    // IMPORTANT: Get your OAuth credentials from Absher Business Portal
+    // رقم العميل = OAuth Client ID (NOT the Link ID!)
+    clientId: '3fd125a2',  // رقم العميل (OAuth Client ID) - Change this!
+
+    // الكتلة السرية = OAuth Client Secret
+    clientSecret: '42d53a3e57bfc9e87a7391c3ce633ce1',  // الكتلة السرية (OAuth Client Secret) - Change this!
+
+    // Production IdP Server
+    authorizationServer: 'https://idp.elm.sa',  // خادم المصادقة للإنتاج (Production IdP)
+
+    // Production Realm Name
+    realmName: 'Tamm',  // اسم المجال للإنتاج (Production Realm)
+
+    // Optional: Link ID for tracking (معرف الربط)
+    linkId: '3fd125a2',  // معرف الربط (Link ID) - Optional
+
     status: 'active',
     notes: 'Production Environment - Live Configuration'
   });
