@@ -76,13 +76,13 @@ const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, 
             <Shield size={20} />
             <span>Social Insurance ({socialInsuranceCount})</span>
           </button>
-          <button
+          {/* <button
             onClick={() => handleTabChange('gosi')}
             className={tabClasses('gosi')}
           >
             <Building2 size={20} />
             <span>GOSI ({gosiCount})</span>
-          </button>
+          </button> */}
         </div>
       </div>
     </div>
