@@ -5,6 +5,9 @@ import homeRentService from './homeRentService';
 import electricityService from './electricityService';
 import absherService from './absherService';
 import socialInsuranceService from './socialInsuranceService';
+import insuranceService from './insuranceService';
+import mvpiService from './mvpiService';
+import gosiService from './gosiService';
 
 export {
   api,
@@ -12,7 +15,10 @@ export {
   homeRentService,
   electricityService,
   absherService,
-  socialInsuranceService
+  socialInsuranceService,
+  insuranceService,
+  mvpiService,
+  gosiService
 };
 
 export default {
@@ -21,5 +27,8 @@ export default {
   homeRent: homeRentService,
   electricity: electricityService,
   absher: absherService,
-  socialInsurance: socialInsuranceService
+  socialInsurance: socialInsuranceService,
+  insurance: insuranceService,
+  mvpi: mvpiService,
+  gosi: gosiService
 };

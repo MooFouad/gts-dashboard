@@ -96,13 +96,16 @@ const AbsherTable = ({ data, onEdit, onDelete }) => {
               </td>
             </tr>
           ) : (
-            data.map((record) => {
+            data.map((record, index) => {
               const earliestExpiry = getEarliestExpiry(record);
               const rowClass = getRowColorClass(record, 'absher');
               const daysUntilExpiry = earliestExpiry ? calculateRemainingDays(earliestExpiry.toISOString().split('T')[0]) : null;
 
+              // Create a unique key combining multiple fields to avoid duplicates
+              const uniqueKey = record._id || `${record.plateInfo || record.plateNumber}_${record.sequenceNumber}_${index}`;
+
               return (
-                <tr key={record._id} className={rowClass}>
+                <tr key={uniqueKey} className={rowClass}>
                   <td className="px-4 py-3 whitespace-nowrap text-sm">
                     {record.sequenceNumber || '-'}
                   </td>

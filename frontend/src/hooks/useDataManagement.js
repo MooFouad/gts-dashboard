@@ -18,6 +18,8 @@ export const useDataManagement = (type) => {
         return '/absher';
       case 'socialInsurance':
         return '/social-insurance'; // Match backend route
+      case 'gosi':
+        return '/gosi'; // GOSI endpoint
       default:
         return `/${type}s`;
     }

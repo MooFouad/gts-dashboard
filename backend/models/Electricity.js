@@ -26,7 +26,30 @@ const electricitySchema = new mongoose.Schema({
     type: String
   },
   date: {
-    type: String
+    type: Date
+  },
+  dueDate: {
+    type: Date
+  },
+  currentReading: {
+    type: Number,
+    default: 0
+  },
+  previousReading: {
+    type: Number,
+    default: 0
+  },
+  consumption: {
+    type: Number,
+    default: 0
+  },
+  alertThreshold: {
+    type: Number,
+    default: 0
+  },
+  consumptionAlert: {
+    type: Boolean,
+    default: false
   },
   attachments: {
     type: Array

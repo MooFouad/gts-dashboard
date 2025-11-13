@@ -1,7 +1,9 @@
 import React from 'react';
-import { Car, Home, Zap, FileText, Shield } from 'lucide-react';
+import { Car, Home, Zap, FileText, Shield, Building2 } from 'lucide-react';
+// Commented out - No data available yet
+// import { FileCheck, ClipboardCheck } from 'lucide-react';
 
-const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, electricityCount, absherCount, socialInsuranceCount }) => {
+const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, electricityCount, absherCount, socialInsuranceCount, gosiCount, insuranceCount, mvpiCount }) => {
   const handleTabChange = (tab) => {
     if (tab !== activeTab) {
       onTabChange(tab);
@@ -32,8 +34,25 @@ const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, 
             className={tabClasses('absher')}
           >
             <Car size={20} />
-            <span>Tamm ({absherCount})</span>
+            <span>Tamm - Istemarah ({absherCount})</span>
           </button>
+
+          {/* Commented out - No data available yet */}
+          {/* <button
+            onClick={() => handleTabChange('insurance')}
+            className={tabClasses('insurance')}
+          >
+            <FileCheck size={20} />
+            <span>Tamm - Insurance ({insuranceCount})</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('mvpi')}
+            className={tabClasses('mvpi')}
+          >
+            <ClipboardCheck size={20} />
+            <span>Tamm - MVPI ({mvpiCount})</span>
+          </button> */}
 
           <button
             onClick={() => handleTabChange('homeRents')}
@@ -56,6 +75,13 @@ const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, 
           >
             <Shield size={20} />
             <span>Social Insurance ({socialInsuranceCount})</span>
+          </button>
+          <button
+            onClick={() => handleTabChange('gosi')}
+            className={tabClasses('gosi')}
+          >
+            <Building2 size={20} />
+            <span>GOSI ({gosiCount})</span>
           </button>
         </div>
       </div>

@@ -249,7 +249,7 @@ router.post('/fetch-from-api', async (req, res, next) => {
 
     // Get all vehicles to fetch their Absher data
     const Vehicle = require('../models/Vehicle');
-    const vehicles = await Vehicle.find({}).select('plateNumber sequenceNumber actualDriverName').lean();
+    const vehicles = await Vehicle.find({}).select('plateNumber sequenceNumber actualDriverName').lean().maxTimeMS(5000).exec();
 
     console.log(`📊 Found ${vehicles.length} vehicles`);
 
@@ -389,7 +389,7 @@ router.post('/sync-all-from-vehicles', async (req, res, next) => {
     const Vehicle = require('../models/Vehicle');
 
     // Fetch all vehicles
-    const vehicles = await Vehicle.find({}).lean();
+    const vehicles = await Vehicle.find({}).lean().maxTimeMS(5000).exec();
     console.log(`📊 Found ${vehicles.length} vehicles to sync`);
 
     if (vehicles.length === 0) {

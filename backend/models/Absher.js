@@ -202,6 +202,9 @@ absherSchema.index({ referenceNumber: 1 });
 absherSchema.index({ expiryDate: 1 });
 absherSchema.index({ inspectionExpiryDate: 1 });
 absherSchema.index({ licenseExpiryDate: 1 });
+absherSchema.index({ renewalExpiryDate: 1 }); // Index for TAMM API field
+absherSchema.index({ sequenceNumber: 1 }); // Index for TAMM API field
+absherSchema.index({ plateInfo: 1 }); // Index for TAMM API field
 absherSchema.index({ status: 1 });
 absherSchema.index({ dataSource: 1 });
 
@@ -225,6 +228,12 @@ absherSchema.pre('save', function(next) {
   if (this.licenseExpiryDate && isNaN(this.licenseExpiryDate.getTime())) {
     this.licenseExpiryDate = null;
   }
+  if (this.renewalExpiryDate && isNaN(this.renewalExpiryDate.getTime())) {
+    this.renewalExpiryDate = null;
+  }
+  if (this.createdDate && isNaN(this.createdDate.getTime())) {
+    this.createdDate = null;
+  }
 
   // Auto-update status based on expiry dates
   const now = new Date();
@@ -234,7 +243,8 @@ absherSchema.pre('save', function(next) {
   const dates = [
     this.expiryDate,
     this.inspectionExpiryDate,
-    this.licenseExpiryDate
+    this.licenseExpiryDate,
+    this.renewalExpiryDate  // Include TAMM API renewal expiry date
   ].filter(date => date && !isNaN(date.getTime()));
 
   if (dates.length === 0) {

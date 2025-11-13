@@ -15,6 +15,7 @@ router.get('/', async (req, res, next) => {
     const bills = await Electricity.find({})
       .lean()
       .sort({ createdAt: 1 })
+      .maxTimeMS(5000)
       .exec();
     res.json({
       success: true,

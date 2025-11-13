@@ -1,49 +1,56 @@
 const { body, param } = require('express-validator');
 
 const createHomeRentValidator = [
-  body('name')
-    .notEmpty().withMessage('Property name is required')
-    .trim()
-    .escape(),
-
   body('contractNumber')
-    .optional()
-    .trim()
-    .escape(),
-
-  body('ownerName')
-    .optional()
-    .trim()
-    .escape(),
-
-  body('ownerPhone')
-    .optional()
+    .notEmpty().withMessage('Contract number is required')
     .trim()
     .escape(),
 
   body('contractStartingDate')
-    .optional()
+    .notEmpty().withMessage('Contract starting date is required')
     .isISO8601().withMessage('Invalid contract starting date format'),
 
   body('contractEndingDate')
-    .optional()
+    .notEmpty().withMessage('Contract ending date is required')
     .isISO8601().withMessage('Invalid contract ending date format'),
 
-  body('monthlyRent')
+  body('notice')
     .optional()
-    .isNumeric().withMessage('Monthly rent must be a number'),
+    .trim(),
 
-  body('contractStatus')
+  body('paymentTerms')
     .optional()
-    .isIn(['Active', 'Expired', 'Terminated', 'Renewed'])
-    .withMessage('Invalid contract status'),
+    .trim(),
 
-  body('paymentMethod')
+  body('paymentType')
     .optional()
-    .trim()
-    .escape(),
+    .trim(),
 
-  body('notes')
+  body('paymentStatus')
+    .optional()
+    .trim(),
+
+  body('amount')
+    .optional()
+    .isNumeric().withMessage('Amount must be a number'),
+
+  body('rentAnnually')
+    .optional()
+    .isNumeric().withMessage('Rent annually must be a number'),
+
+  body('address')
+    .optional()
+    .trim(),
+
+  body('contactPerson')
+    .optional()
+    .trim(),
+
+  body('gtsContact')
+    .optional()
+    .trim(),
+
+  body('comments')
     .optional()
     .trim()
 ];

@@ -12,7 +12,7 @@ const {
 // GET all home rents
 router.get('/', async (req, res, next) => {
   try {
-    const homeRents = await HomeRent.find({}).lean();
+    const homeRents = await HomeRent.find({}).lean().maxTimeMS(5000).exec();
     res.json({
       success: true,
       count: homeRents.length,

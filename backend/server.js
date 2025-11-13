@@ -141,7 +141,10 @@ app.get('/api/health', (req, res) => {
       notifications: '/api/notifications',
       import: '/api/import',
       absher: '/api/absher',
-      socialInsurance: '/api/social-insurance'
+      socialInsurance: '/api/social-insurance',
+      insurance: '/api/insurance',
+      mvpi: '/api/mvpi',
+      gosi: '/api/gosi'
     }
   });
 });
@@ -160,6 +163,9 @@ app.use('/api/electricity', authenticate, require('./routes/electricityRoutes'))
 app.use('/api/import', authenticate, authorize('admin', 'user'), require('./routes/importRoutes'));
 app.use('/api/absher', authenticate, require('./routes/absherRoutes'));
 app.use('/api/social-insurance', authenticate, require('./routes/socialInsuranceRoutes'));
+app.use('/api/insurance', authenticate, require('./routes/insuranceRoutes'));
+app.use('/api/mvpi', authenticate, require('./routes/mvpiRoutes'));
+app.use('/api/gosi', authenticate, require('./routes/gosiRoutes'));
 
 // Use centralized error handler
 app.use(errorHandler);

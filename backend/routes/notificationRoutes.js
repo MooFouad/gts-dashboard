@@ -274,7 +274,7 @@ router.get('/preferences/:email', authenticate, async (req, res) => {
 // Get all subscriptions (for debugging)
 router.get('/subscriptions', authenticate, async (req, res) => {
   try {
-    const subscriptions = await PushSubscription.find({}).select('-keys');
+    const subscriptions = await PushSubscription.find({}).select('-keys').maxTimeMS(5000).exec();
     res.json({
       count: subscriptions.length,
       subscriptions

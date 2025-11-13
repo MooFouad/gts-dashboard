@@ -14,12 +14,30 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
     division: '',
     meterNumber: '',
     date: '',
+    dueDate: '',
+    previousReading: 0,
+    currentReading: 0,
+    consumption: 0,
+    alertThreshold: 0,
+    consumptionAlert: false,
     attachments: []
   });
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      // Format dates for date inputs
+      const formatted = { ...initialData };
+      if (formatted.date && !formatted.date.includes('T')) {
+        formatted.date = formatted.date;
+      } else if (formatted.date) {
+        formatted.date = formatted.date.split('T')[0];
+      }
+      if (formatted.dueDate && !formatted.dueDate.includes('T')) {
+        formatted.dueDate = formatted.dueDate;
+      } else if (formatted.dueDate) {
+        formatted.dueDate = formatted.dueDate.split('T')[0];
+      }
+      setFormData(formatted);
     } else if (nextNo) {
       // Set auto-generated number for new items
       setFormData(prev => ({ ...prev, no: nextNo.toString() }));
@@ -32,7 +50,23 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
   };
 
   const handleChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    const updated = { ...formData, [field]: value };
+
+    // Auto-calculate consumption when readings change
+    if (field === 'currentReading' || field === 'previousReading') {
+      const current = parseFloat(field === 'currentReading' ? value : updated.currentReading) || 0;
+      const previous = parseFloat(field === 'previousReading' ? value : updated.previousReading) || 0;
+      updated.consumption = Math.max(0, current - previous);
+
+      // Check alert threshold
+      if (updated.alertThreshold > 0 && updated.consumption > updated.alertThreshold) {
+        updated.consumptionAlert = true;
+      } else {
+        updated.consumptionAlert = false;
+      }
+    }
+
+    setFormData(updated);
   };
 
   return (
@@ -114,12 +148,67 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
           />
         </FormField>
 
-        <FormField label="Date">
+        <FormField label="Bill Date">
           <input
             type="date"
             className="w-full border rounded px-3 py-2"
             value={formData.date}
             onChange={(e) => handleChange('date', e.target.value)}
+          />
+        </FormField>
+
+        <FormField label="Due Date">
+          <input
+            type="date"
+            className="w-full border rounded px-3 py-2"
+            value={formData.dueDate}
+            onChange={(e) => handleChange('dueDate', e.target.value)}
+          />
+        </FormField>
+
+        <FormField label="Previous Reading">
+          <input
+            type="number"
+            className="w-full border rounded px-3 py-2"
+            value={formData.previousReading}
+            onChange={(e) => handleChange('previousReading', e.target.value)}
+            min="0"
+            step="0.01"
+          />
+        </FormField>
+
+        <FormField label="Current Reading">
+          <input
+            type="number"
+            className="w-full border rounded px-3 py-2"
+            value={formData.currentReading}
+            onChange={(e) => handleChange('currentReading', e.target.value)}
+            min="0"
+            step="0.01"
+          />
+        </FormField>
+
+        <FormField label="Consumption (kWh)">
+          <input
+            type="number"
+            className="w-full border rounded px-3 py-2 bg-gray-100"
+            value={formData.consumption}
+            readOnly
+            disabled
+            title="Auto-calculated from readings"
+          />
+          <p className="text-xs text-gray-500 mt-1">Auto-calculated</p>
+        </FormField>
+
+        <FormField label="Alert Threshold (kWh)">
+          <input
+            type="number"
+            className="w-full border rounded px-3 py-2"
+            value={formData.alertThreshold}
+            onChange={(e) => handleChange('alertThreshold', e.target.value)}
+            min="0"
+            step="0.01"
+            placeholder="Set alert threshold for high consumption"
           />
         </FormField>
 

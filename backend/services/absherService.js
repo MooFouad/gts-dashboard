@@ -12,9 +12,11 @@ class TammService {
     this.tokenExpiry = null;
     this.config = null;
     this.configLoaded = false;
+    this.initializationError = null;
+    this.initializationPromise = null;
 
-    // Initialize config asynchronously
-    this.initializeConfig();
+    // Initialize config asynchronously and store the promise
+    this.initializationPromise = this.initializeConfig();
   }
 
   /**
@@ -36,7 +38,8 @@ class TammService {
           clientSecret: dbConfig.clientSecret,
           subscriptionKey: process.env.TAMM_SUBSCRIPTION_KEY || '',
           authServer: dbConfig.authorizationServer,
-          realmName: dbConfig.realmName
+          realmName: dbConfig.realmName,
+          integratorUserId: process.env.TAMM_INTEGRATOR_USER_ID || '7001486054'
         };
 
         console.log('🔧 Absher Service initialized with DATABASE configuration');
@@ -51,7 +54,8 @@ class TammService {
           apiUrl: process.env.TAMM_API_URL,
           clientId: process.env.TAMM_CLIENT_ID,
           clientSecret: process.env.TAMM_CLIENT_SECRET,
-          subscriptionKey: process.env.TAMM_SUBSCRIPTION_KEY
+          subscriptionKey: process.env.TAMM_SUBSCRIPTION_KEY,
+          integratorUserId: process.env.TAMM_INTEGRATOR_USER_ID || '7001486054'
         };
 
         console.log('🔧 Absher Service initialized with ENVIRONMENT VARIABLES (fallback)');
@@ -60,20 +64,18 @@ class TammService {
         console.log(`   Client ID: ${this.config.clientId ? '***' + this.config.clientId.slice(-4) : 'NOT SET'}`);
       }
 
+      // Validate that required config fields are present
+      if (!this.config.authUrl || !this.config.apiUrl || !this.config.clientId || !this.config.clientSecret) {
+        throw new Error('TAMM configuration is incomplete. Required fields: authUrl, apiUrl, clientId, clientSecret');
+      }
+
       this.configLoaded = true;
+      this.initializationError = null;
     } catch (error) {
-      console.error('❌ Error loading config from database, using environment variables:', error.message);
-
-      // Fallback to environment variables on error
-      this.config = {
-        authUrl: process.env.TAMM_AUTH_URL,
-        apiUrl: process.env.TAMM_API_URL,
-        clientId: process.env.TAMM_CLIENT_ID,
-        clientSecret: process.env.TAMM_CLIENT_SECRET,
-        subscriptionKey: process.env.TAMM_SUBSCRIPTION_KEY
-      };
-
-      this.configLoaded = true;
+      console.error('❌ Error initializing Absher Service configuration:', error.message);
+      this.initializationError = error;
+      this.configLoaded = true; // Mark as "loaded" (failed) to stop waiting
+      throw error; // Re-throw to be caught in getConfig
     }
   }
 
@@ -92,18 +94,22 @@ class TammService {
    * Get TAMM configuration (wait for config to load if needed)
    */
   async getConfig() {
-    // Wait for config to be loaded
-    let attempts = 0;
-    while (!this.configLoaded && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
+    // Wait for initialization to complete
+    if (this.initializationPromise) {
+      try {
+        await this.initializationPromise;
+      } catch (error) {
+        // Initialization failed, error already logged
+      }
     }
 
-    if (!this.config) {
-      throw new Error('TAMM configuration not loaded. Please check database or environment variables.');
+    // Check if initialization failed
+    if (this.initializationError) {
+      throw new Error(`TAMM configuration failed to load: ${this.initializationError.message}. Please check database or environment variables (TAMM_AUTH_URL, TAMM_API_URL, TAMM_CLIENT_ID, TAMM_CLIENT_SECRET).`);
     }
 
-    if (!this.config.authUrl || !this.config.apiUrl || !this.config.clientId || !this.config.clientSecret) {
+    // Additional safety check for config completeness
+    if (!this.config || !this.config.authUrl || !this.config.apiUrl || !this.config.clientId || !this.config.clientSecret) {
       throw new Error('TAMM configuration is incomplete. Please check database configuration or environment variables (TAMM_AUTH_URL, TAMM_API_URL, TAMM_CLIENT_ID, TAMM_CLIENT_SECRET)');
     }
 
@@ -364,7 +370,8 @@ class TammService {
 
       const headers = {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Integrator-User-Id': config.integratorUserId // Required for Insurance API
       };
 
       // Add subscription key if available
@@ -372,6 +379,8 @@ class TammService {
         headers['Ocp-Apim-Subscription-Key'] = config.subscriptionKey;
         console.log(`🔑 Using Subscription Key: ${config.subscriptionKey.substring(0, 8)}...`);
       }
+
+      console.log(`🔑 Using Integrator User ID: ${config.integratorUserId}`);
 
       const response = await axios.post(apiUrl, plateData, {
         headers: headers,
@@ -496,7 +505,8 @@ class TammService {
 
       const headers = {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Integrator-User-Id': config.integratorUserId // Required for MVPI API
       };
 
       // Add subscription key if available
@@ -504,6 +514,8 @@ class TammService {
         headers['Ocp-Apim-Subscription-Key'] = config.subscriptionKey;
         console.log(`🔑 Using Subscription Key: ${config.subscriptionKey.substring(0, 8)}...`);
       }
+
+      console.log(`🔑 Using Integrator User ID: ${config.integratorUserId}`);
 
       const response = await axios.post(apiUrl, plateData, {
         headers: headers,
@@ -810,19 +822,25 @@ class TammService {
    * Search ALL Istemarah Records (no filter)
    * POST /api/v1/istemarah/renewal/client-search?page=0&size=10
    * Fetches all Istemarah records without any filter
-   * @param {string} integratorUserId - Integrator user ID (default: '7001486054')
+   * @param {string} integratorUserId - Integrator user ID (uses config value if not provided)
    * @param {number} page - Page number (default: 0)
    * @param {number} size - Page size (default: 10)
    */
-  async searchAllIstemarah(integratorUserId = '7001486054', page = 0, size = 10) {
+  async searchAllIstemarah(integratorUserId = null, page = 0, size = 10) {
     try {
       console.log('\n' + '='.repeat(80));
       console.log(`🔍 ABSHER API CALL - Search ALL Istemarah Records`);
       console.log('='.repeat(80));
+      const config = await this.getConfig();
+
+      // Use config value if not provided
+      if (!integratorUserId) {
+        integratorUserId = config.integratorUserId;
+      }
+
       console.log(`📋 Integrator User ID: ${integratorUserId}`);
       console.log(`📋 Page: ${page}, Size: ${size}`);
 
-      const config = await this.getConfig();
       const accessToken = await this.generateAccessToken();
 
       // TAMM API endpoint for Istemarah renewal search

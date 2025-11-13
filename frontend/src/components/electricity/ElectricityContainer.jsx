@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ElectricityTable from './ElectricityTable';
 import ElectricityForm from './ElectricityForm';
 import FormDialog from '../common/FormDialog';
@@ -6,16 +6,13 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import Toolbar from '../layout/Toolbar';
 import ExportButton from '../common/ExportButton';
 import { useDataManagement } from '../../hooks/useDataManagement';
-import { useAuth } from '../../contexts/AuthContext';
 import { exportElectricityToExcel } from '../../utils/excel/excelUtils';
 
 const ElectricityContainer = () => {
-  const { user } = useAuth();
   const [formDialog, setFormDialog] = useState({ isOpen: false, data: null });
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [importing, setImporting] = useState(false);
   const { data: items, addItem, updateItem, deleteItem, loading, error, refreshData } = useDataManagement('electricity');
 
   const filteredItems = items.filter((item) => {
@@ -26,19 +23,25 @@ const ElectricityContainer = () => {
 
     // Status filter
     let matchStatus = true;
-    if (filterStatus !== 'all') {
+    if (filterStatus !== 'all' && item.dueDate) {
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const dueDate = new Date(item.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
       const tenDaysFromNow = new Date();
       tenDaysFromNow.setDate(tenDaysFromNow.getDate() + 10);
-      
+      tenDaysFromNow.setHours(0, 0, 0, 0);
+
       if (filterStatus === 'expired') {
         matchStatus = dueDate < today;
       } else if (filterStatus === 'warning') {
-        matchStatus = dueDate <= tenDaysFromNow && dueDate > today;
+        matchStatus = dueDate <= tenDaysFromNow && dueDate >= today;
       } else if (filterStatus === 'valid') {
         matchStatus = dueDate > tenDaysFromNow;
       }
+    } else if (filterStatus !== 'all' && !item.dueDate) {
+      // If no dueDate is set, don't filter by status
+      matchStatus = false;
     }
 
     return matchSearch && matchStatus;
@@ -98,21 +101,7 @@ const ElectricityContainer = () => {
     }
   };
 
-  const handleImport = async (file) => {
-    try {
-      setImporting(true);
-      const result = await importElectricityFromExcel(file, addItem);
-      alert(`Successfully imported ${result.count} electricity bill records!`);
-      await refreshData();
-    } catch (error) {
-      console.error('Import error:', error);
-      alert(`Failed to import data: ${error.message}`);
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  if (loading && !importing) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>

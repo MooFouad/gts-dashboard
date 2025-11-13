@@ -237,6 +237,54 @@ const AbsherContainer = () => {
           };
         });
 
+        // Check for duplicates in API data
+        const sequenceNumberCounts = {};
+        const plateInfoCounts = {};
+        formattedData.forEach(record => {
+          if (record.sequenceNumber) {
+            sequenceNumberCounts[record.sequenceNumber] = (sequenceNumberCounts[record.sequenceNumber] || 0) + 1;
+          }
+          if (record.plateInfo) {
+            plateInfoCounts[record.plateInfo] = (plateInfoCounts[record.plateInfo] || 0) + 1;
+          }
+        });
+
+        const seqDuplicates = Object.entries(sequenceNumberCounts).filter(([_, count]) => count > 1);
+        const plateDuplicates = Object.entries(plateInfoCounts).filter(([_, count]) => count > 1);
+
+        if (seqDuplicates.length > 0) {
+          console.warn(`⚠️  API returned ${seqDuplicates.length} duplicate sequenceNumbers:`);
+          seqDuplicates.forEach(([seq, count]) => {
+            const records = formattedData.filter(r => r.sequenceNumber === seq);
+            console.warn(`   ${seq}: ${count} copies with plateInfo:`, records.map(r => r.plateInfo).join(', '));
+          });
+        }
+
+        if (plateDuplicates.length > 0) {
+          console.warn(`⚠️  API returned ${plateDuplicates.length} duplicate plateInfo:`);
+          plateDuplicates.forEach(([plate, count]) => {
+            console.warn(`   ${plate}: ${count} copies`);
+          });
+        }
+
+        // Remove duplicates from API data (keep first occurrence only)
+        const uniqueFormattedData = [];
+        const seenSequenceNumbers = new Set();
+        const seenPlateInfo = new Set();
+
+        formattedData.forEach(record => {
+          const compositeKey = `${record.plateInfo}_${record.sequenceNumber}`;
+          if (!seenPlateInfo.has(compositeKey)) {
+            uniqueFormattedData.push(record);
+            seenPlateInfo.add(compositeKey);
+            if (record.sequenceNumber) seenSequenceNumbers.add(record.sequenceNumber);
+          } else {
+            console.warn(`🔄 Skipping duplicate from API: ${record.plateInfo} (seq: ${record.sequenceNumber})`);
+          }
+        });
+
+        console.log(`✅ After deduplication: ${uniqueFormattedData.length}/${formattedData.length} unique records`);
+
         // Save to database
         console.log('💾 Syncing with database...');
         let savedCount = 0;
@@ -303,7 +351,7 @@ const AbsherContainer = () => {
         }
 
         // Get plate numbers from API data
-        const apiPlateNumbers = new Set(formattedData.map(r => r.plateNumber));
+        const apiPlateNumbers = new Set(uniqueFormattedData.map(r => r.plateNumber));
 
         // Helper function to check if data has changed
         const hasDataChanged = (existing, newData) => {
@@ -325,7 +373,7 @@ const AbsherContainer = () => {
         };
 
         // Save/Update each record
-        for (const record of formattedData) {
+        for (const record of uniqueFormattedData) {
           try {
             const existing = existingRecords.find(
               item => item.plateNumber === record.plateNumber
@@ -389,7 +437,7 @@ const AbsherContainer = () => {
         console.log(`   Final count: ${existingRecords.length - deletedCount + savedCount}`);
 
         // Display formatted data for UI - keep all API fields
-        const displayData = formattedData.map(record => ({
+        const displayData = uniqueFormattedData.map(record => ({
           ...record,
           // All API fields are already in the record
           status: 'success'
