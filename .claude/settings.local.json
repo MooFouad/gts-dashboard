@@ -46,7 +46,14 @@
       "Bash(ping:*)",
       "Bash(npm start)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add simple Social Insurance management system\n\nChanges:\n- Add Social Insurance database model with fields: name, ID, division, start/end dates\n- Auto-calculate remaining days until expiry (virtual field)\n- Auto-update status based on remaining days (active/expiring-soon/expired)\n- Add backend routes for full CRUD operations (create, read, update, delete, bulk delete)\n- Add frontend components: container, table, and form\n- Add color-coded display for remaining days (red/orange/yellow/green)\n- Add status filtering and search functionality\n- Remove GOSI API integration from server startup (optional fields for now)\n- Update Toolbar component to support custom status options and placeholders\n\nBenefits:\n- Simple database-only system (no external API dependencies)\n- Easy to add records with optional validation\n- Visual expiry tracking with color coding\n- Works without GOSI credentials on Render deployment\n- Can enable validation later when data is complete\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add simple Social Insurance management system\n\nChanges:\n- Add Social Insurance database model with fields: name, ID, division, start/end dates\n- Auto-calculate remaining days until expiry (virtual field)\n- Auto-update status based on remaining days (active/expiring-soon/expired)\n- Add backend routes for full CRUD operations (create, read, update, delete, bulk delete)\n- Add frontend components: container, table, and form\n- Add color-coded display for remaining days (red/orange/yellow/green)\n- Add status filtering and search functionality\n- Remove GOSI API integration from server startup (optional fields for now)\n- Update Toolbar component to support custom status options and placeholders\n\nBenefits:\n- Simple database-only system (no external API dependencies)\n- Easy to add records with optional validation\n- Visual expiry tracking with color coding\n- Works without GOSI credentials on Render deployment\n- Can enable validation later when data is complete\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(dir /s /b *.pdf 2)",
+      "Bash(nul)",
+      "Bash(dir /s /b *.png *.jpg 2)",
+      "Bash(dir /s /b)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

@@ -64,6 +64,8 @@ backend/*-test.js
 *.PDF
 GOSI_SETUP.md
 DEPLOY_*.md
+*.md
+*.MD
 
 # Coverage reports
 coverage/
