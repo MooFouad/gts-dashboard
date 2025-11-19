@@ -58,12 +58,12 @@ router.post('/subscribe', async (req, res) => {
     }
 
     // Validate notificationTypes if provided
-    const validTypes = ['vehicle', 'homeRent', 'electricity'];
+    const validTypes = ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance'];
     if (notificationTypes && !Array.isArray(notificationTypes)) {
       return res.status(400).json({ error: 'notificationTypes must be an array' });
     }
     if (notificationTypes && notificationTypes.some(type => !validTypes.includes(type))) {
-      return res.status(400).json({ error: 'Invalid notification type. Valid types: vehicle, homeRent, electricity' });
+      return res.status(400).json({ error: 'Invalid notification type. Valid types: vehicle, homeRent, electricity, absher, socialInsurance' });
     }
 
     // Check if subscription already exists
@@ -92,7 +92,7 @@ router.post('/subscribe', async (req, res) => {
       endpoint: subscription.endpoint,
       keys: subscription.keys,
       userEmail: email,
-      notificationTypes: notificationTypes || ['vehicle', 'homeRent', 'electricity'],
+      notificationTypes: notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance'],
       userAgent: req.headers['user-agent']
     });
 
@@ -218,12 +218,12 @@ router.post('/update-preferences', authenticate, async (req, res) => {
     }
 
     // Validate notificationTypes
-    const validTypes = ['vehicle', 'homeRent', 'electricity'];
+    const validTypes = ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance'];
     if (!Array.isArray(notificationTypes)) {
       return res.status(400).json({ error: 'notificationTypes must be an array' });
     }
     if (notificationTypes.some(type => !validTypes.includes(type))) {
-      return res.status(400).json({ error: 'Invalid notification type. Valid types: vehicle, homeRent, electricity' });
+      return res.status(400).json({ error: 'Invalid notification type. Valid types: vehicle, homeRent, electricity, absher, socialInsurance' });
     }
 
     // Update all subscriptions for this email
@@ -257,13 +257,13 @@ router.get('/preferences/:email', authenticate, async (req, res) => {
     if (!subscription) {
       return res.json({
         success: true,
-        notificationTypes: ['vehicle', 'homeRent', 'electricity'] // Default
+        notificationTypes: ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance'] // Default
       });
     }
 
     res.json({
       success: true,
-      notificationTypes: subscription.notificationTypes || ['vehicle', 'homeRent', 'electricity']
+      notificationTypes: subscription.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance']
     });
   } catch (error) {
     console.error('Error fetching preferences:', error);
