@@ -4,6 +4,7 @@ const PushSubscription = require('../models/PushSubscription');
 const Vehicle = require('../models/Vehicle');
 const HomeRent = require('../models/HomeRent');
 const Electricity = require('../models/Electricity');
+const GOSI = require('../models/GOSI');
 
 // Configure VAPID
 webpush.setVapidDetails(
@@ -230,6 +231,32 @@ class NotificationService {
         }
       }
 
+      // Check GOSI Engagement End Dates
+      const gosiEmployees = await GOSI.find({});
+      for (const employee of gosiEmployees) {
+        const endDays = this.getDaysUntilExpiration(employee.engagementEndDate);
+
+        if (this.shouldNotify(endDays) && employee.engagementEndDate) {
+          const status = endDays < 0
+            ? `Ended ${Math.abs(endDays)} days ago`
+            : endDays === 0
+              ? 'Ends Today'
+              : `${endDays} days remaining`;
+
+          notifications.push({
+            type: 'gosi',
+            subType: 'engagement',
+            item: employee,
+            itemId: employee._id,
+            fieldName: 'engagementEndDate',
+            expiryDate: employee.engagementEndDate,
+            daysUntil: endDays,
+            title: endDays < 0 ? '❌ GOSI Engagement ENDED' : '👥 GOSI Engagement Ending Soon',
+            message: `Employee ${employee.name} (${employee.nin}) engagement - ${status} (${new Date(employee.engagementEndDate).toLocaleDateString()})`
+          });
+        }
+      }
+
       return notifications;
     } catch (error) {
       console.error('Error getting items needing notification:', error);
@@ -245,7 +272,7 @@ class NotificationService {
 
       // Filter subscriptions based on notification type
       const subscriptions = allSubscriptions.filter(sub => {
-        const types = sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance'];
+        const types = sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance', 'gosi'];
         return types.includes(notification.type);
       });
 

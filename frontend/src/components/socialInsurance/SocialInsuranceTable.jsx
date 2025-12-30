@@ -1,5 +1,6 @@
 import React from 'react';
 import ActionButtons from '../common/ActionButtons';
+import ScrollableTableWrapper from '../common/ScrollableTableWrapper';
 
 const SocialInsuranceTable = ({ data, onEdit, onDelete }) => {
   const formatDate = (dateString) => {
@@ -30,7 +31,7 @@ const SocialInsuranceTable = ({ data, onEdit, onDelete }) => {
   };
 
   return (
-    <div className="overflow-x-auto">
+    <ScrollableTableWrapper>
       <table className="min-w-full bg-white border border-gray-200">
         <thead className="bg-gray-50">
           <tr>
@@ -110,7 +111,7 @@ const SocialInsuranceTable = ({ data, onEdit, onDelete }) => {
           )}
         </tbody>
       </table>
-    </div>
+    </ScrollableTableWrapper>
   );
 };
 

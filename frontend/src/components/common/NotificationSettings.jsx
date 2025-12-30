@@ -15,7 +15,8 @@ const NotificationSettings = () => {
     homeRent: true,
     electricity: true,
     absher: true,
-    socialInsurance: true
+    socialInsurance: true,
+    gosi: true
   });
 
   const addDebugLog = (msg) => {
@@ -85,7 +86,7 @@ const NotificationSettings = () => {
       }
 
       addDebugLog(`📝 Subscribing to notifications with email and types: ${selectedTypes.join(', ')}...`);
-      const result = await pushNotificationService.subscribe(email, selectedTypes);
+      await pushNotificationService.subscribe(email, selectedTypes);
 
       addDebugLog('✅ Subscribe method completed');
 
@@ -401,10 +402,10 @@ const NotificationSettings = () => {
                 />
                 <div className="flex-1">
                   <div className="font-medium text-gray-900 group-hover:text-blue-700">
-                    📄 Absher Notifications
+                    📋 Tamm Notifications
                   </div>
                   <p className="text-xs text-gray-600">
-                    Registration, inspection, and license expiration alerts
+                    Vehicle registration, inspection, and license expiration alerts
                   </p>
                 </div>
               </label>
@@ -423,6 +424,24 @@ const NotificationSettings = () => {
                   </div>
                   <p className="text-xs text-gray-600">
                     Social insurance expiration alerts
+                  </p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={notificationTypes.gosi}
+                  onChange={(e) => setNotificationTypes({ ...notificationTypes, gosi: e.target.checked })}
+                  disabled={isSubscribed}
+                  className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900 group-hover:text-blue-700">
+                    👥 GOSI Notifications
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    GOSI engagement end date alerts (10 days before termination)
                   </p>
                 </div>
               </label>
@@ -539,20 +558,22 @@ const NotificationSettings = () => {
               </h3>
               <div className="space-y-2">
                 {subscriptions.map((subscription) => {
-                  const types = subscription.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance'];
+                  const types = subscription.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance', 'gosi'];
                   const typeIcons = {
                     vehicle: '🚗',
                     homeRent: '🏠',
                     electricity: '⚡',
-                    absher: '📄',
-                    socialInsurance: '🛡️'
+                    absher: '📋',
+                    socialInsurance: '🛡️',
+                    gosi: '👥'
                   };
                   const typeLabels = {
                     vehicle: 'Vehicles',
                     homeRent: 'Home Rent',
                     electricity: 'Electricity',
-                    absher: 'Absher',
-                    socialInsurance: 'Social Insurance'
+                    absher: 'Tamm',
+                    socialInsurance: 'Social Insurance',
+                    gosi: 'GOSI'
                   };
 
                   return (
@@ -612,7 +633,7 @@ const NotificationSettings = () => {
               <li>• <strong>Daily checks at 9:00 AM</strong> - Automatic notification system runs</li>
               <li>• <strong>Both channels</strong> - Browser push AND email notifications sent together</li>
               <li>• <strong>Repeated daily</strong> - Starting 10 days before expiration until expiration day</li>
-              <li>• <strong>All categories</strong> - Vehicles, rentals, electricity bills, Absher, and social insurance</li>
+              <li>• <strong>All categories</strong> - Vehicles, rentals, electricity bills, Tamm, social insurance, and GOSI</li>
               <li>• <strong>One subscription</strong> - No need for separate email/browser subscriptions</li>
             </ul>
           </div>

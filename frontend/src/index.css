@@ -15,3 +15,72 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Custom scrollbar styles - always visible and styled */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+  padding-bottom: 0.5rem; /* Space for scrollbar */
+}
+
+/* Webkit (Chrome, Safari, Edge) scrollbar styles */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 12px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Hide scrollbar on table containers (we use the fixed one instead) */
+.scroll-container-hidden {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.scroll-container-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+
+/* Fixed horizontal scrollbar at bottom of viewport */
+.fixed-horizontal-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #3b82f6 #e2e8f0;
+}
+
+.fixed-horizontal-scrollbar::-webkit-scrollbar {
+  height: 14px;
+  -webkit-appearance: none;
+}
+
+.fixed-horizontal-scrollbar::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 0;
+}
+
+.fixed-horizontal-scrollbar::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+  min-width: 50px; /* Ensure thumb is always visible */
+}
+
+.fixed-horizontal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+.fixed-horizontal-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #1d4ed8;
+}

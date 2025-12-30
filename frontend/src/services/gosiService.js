@@ -102,6 +102,31 @@ export const getEstablishmentInfo = async () => {
   return await api.get('/gosi/establishment/info');
 };
 
+/**
+ * Import employees from Excel file and bulk sync from GOSI API
+ * @param {File} file - Excel file with employee Iqama numbers
+ * @returns {Promise<Object>} - Import results
+ */
+export const importEmployees = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/import/gosi`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Import failed');
+  }
+
+  return await response.json();
+};
+
 export default {
   getAll,
   getById,
@@ -113,5 +138,6 @@ export default {
   syncEmployee,
   syncMultipleEmployees,
   testConnection,
-  getEstablishmentInfo
+  getEstablishmentInfo,
+  importEmployees
 };

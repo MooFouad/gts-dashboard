@@ -6,6 +6,8 @@ const XLSX = require('xlsx');
 const Vehicle = require('../models/Vehicle');
 const HomeRent = require('../models/HomeRent');
 const Electricity = require('../models/Electricity');
+const GOSI = require('../models/GOSI');
+const gosiService = require('../services/gosiService');
 
 // Configure multer for file upload
 const storage = multer.memoryStorage();
@@ -285,6 +287,178 @@ router.post('/electricity', upload.single('file'), async (req, res) => {
   } catch (error) {
     console.error('Import error:', error);
     res.status(500).json({ error: 'Failed to import data', details: error.message });
+  }
+});
+
+// Import GOSI Employee Iqama Numbers and Bulk Sync
+router.post('/gosi', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    console.log('📥 GOSI Import: Reading Excel file...');
+
+    // Read the Excel file
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: '' });
+
+    if (jsonData.length === 0) {
+      return res.status(400).json({ error: 'Excel file is empty' });
+    }
+
+    console.log(`📋 Found ${jsonData.length} rows in Excel file`);
+
+    // Extract Iqama/NIN numbers from Excel
+    // Support multiple column names: NIN, Iqama, National ID, etc.
+    const ninList = [];
+    for (let i = 0; i < jsonData.length; i++) {
+      const row = jsonData[i];
+
+      // Try different column names
+      const nin = cleanValue(
+        row['NIN'] ||
+        row['nin'] ||
+        row['Iqama'] ||
+        row['iqama'] ||
+        row['National ID'] ||
+        row['nationalId'] ||
+        row['رقم الهوية'] ||
+        row['رقم الإقامة'] ||
+        row['ID'] ||
+        row['id']
+      );
+
+      if (nin && nin.length >= 10) {
+        ninList.push(nin);
+      } else {
+        console.log(`⚠️ Row ${i + 1}: Invalid or missing NIN/Iqama number`);
+      }
+    }
+
+    if (ninList.length === 0) {
+      return res.status(400).json({
+        error: 'No valid Iqama/NIN numbers found in Excel file',
+        hint: 'Make sure your Excel has a column named: NIN, Iqama, National ID, or ID'
+      });
+    }
+
+    console.log(`✅ Extracted ${ninList.length} valid Iqama numbers`);
+
+    // Bulk sync from GOSI API
+    console.log('🔄 Starting bulk sync from GOSI API...');
+    const results = {
+      total: ninList.length,
+      success: [],
+      failed: [],
+      saved: 0
+    };
+
+    for (const nin of ninList) {
+      try {
+        console.log(`📥 Fetching data for NIN: ${nin}`);
+
+        // Fetch from GOSI API
+        const apiResult = await gosiService.getContributorData(nin);
+
+        if (!apiResult.success) {
+          results.failed.push({
+            nin,
+            error: apiResult.error || 'Failed to fetch from GOSI',
+            code: apiResult.code
+          });
+          continue;
+        }
+
+        // Map GOSI API response to our model
+        const apiData = apiResult.data;
+
+        // Map coverage array to products
+        const products = (apiData.engagements?.coverage || []).map(coverage => ({
+          productName: coverage.name?.english || '',
+          productNameAr: coverage.name?.arabic || '',
+          employerContribution: coverage.employerDeductionRate || 0,
+          employeeContribution: coverage.employeeDeductionRate || 0,
+          totalContribution: (coverage.employerDeductionRate || 0) + (coverage.employeeDeductionRate || 0),
+          deductionRate: (coverage.employerDeductionRate || 0) + (coverage.employeeDeductionRate || 0)
+        }));
+
+        // Calculate totals
+        const totalEmployerContribution = products.reduce((sum, p) => sum + (p.employerContribution || 0), 0);
+        const totalEmployeeContribution = products.reduce((sum, p) => sum + (p.employeeContribution || 0), 0);
+        const totalContribution = totalEmployerContribution + totalEmployeeContribution;
+
+        const gosiRecord = {
+          nin: nin,
+          name: apiData.fullName?.english || '',
+          nameAr: apiData.fullName?.arabic || '',
+          contributorType: apiData.engagements?.type || '',
+          establishmentRegNumber: apiData.engagements?.registrationNumber || process.env.GOSI_REGISTRATION_NUMBER || '',
+          establishmentName: apiData.establishmentName || '',
+          engagementStartDate: apiData.engagements?.startDate ? new Date(apiData.engagements.startDate) : null,
+          engagementEndDate: apiData.engagements?.endDate ? new Date(apiData.engagements.endDate) : null,
+          engagementStatus: apiData.engagements?.status || apiData.status || '',
+          occupation: apiData.occupation || '',
+          occupationCode: apiData.occupationCode || '',
+          wage: apiData.wage || 0,
+          currency: apiData.currency || 'SAR',
+          products: products,
+          totalEmployerContribution,
+          totalEmployeeContribution,
+          totalContribution,
+          fullApiResponse: apiData,
+          lastSyncDate: new Date()
+        };
+
+        // Save to database
+        const savedRecord = await GOSI.findOneAndUpdate(
+          { nin: nin },
+          gosiRecord,
+          { upsert: true, new: true, runValidators: true }
+        );
+
+        results.success.push({
+          nin,
+          name: gosiRecord.name
+        });
+        results.saved++;
+
+        console.log(`✅ Saved: ${nin} - ${gosiRecord.name}`);
+
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+      } catch (error) {
+        console.error(`❌ Error processing NIN ${nin}:`, error.message);
+        results.failed.push({
+          nin,
+          error: error.message,
+          code: 'EXCEPTION'
+        });
+      }
+    }
+
+    console.log(`✅ GOSI Import completed: ${results.saved} saved, ${results.failed.length} failed`);
+
+    res.status(200).json({
+      message: 'GOSI import completed',
+      results: {
+        total: results.total,
+        saved: results.saved,
+        failed: results.failed.length,
+        successList: results.success,
+        failedList: results.failed
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ GOSI Import error:', error);
+    res.status(500).json({
+      error: 'Failed to import GOSI data',
+      details: error.message
+    });
   }
 });
 

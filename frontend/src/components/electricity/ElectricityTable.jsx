@@ -1,10 +1,11 @@
 import React from 'react';
 import ActionButtons from '../common/ActionButtons';
 import { getRowColorClass } from '../../utils/styleUtils';
+import ScrollableTableWrapper from '../common/ScrollableTableWrapper';
 
 const ElectricityTable = ({ data, onEdit, onDelete }) => {
   return (
-    <div className="overflow-x-auto -mx-2 sm:mx-0">
+    <ScrollableTableWrapper className="-mx-2 sm:mx-0">
       <table className="min-w-full">
       <thead className="bg-gray-100 border-b">
         <tr>
@@ -47,7 +48,7 @@ const ElectricityTable = ({ data, onEdit, onDelete }) => {
         })}
       </tbody>
     </table>
-    </div>
+    </ScrollableTableWrapper>
   );
 };
 

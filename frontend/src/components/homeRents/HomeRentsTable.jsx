@@ -1,5 +1,6 @@
 import React from 'react';
 import ActionButtons from '../common/ActionButtons';
+import ScrollableTableWrapper from '../common/ScrollableTableWrapper';
 
 const HomeRentsTable = ({ data = [], onEdit, onDelete }) => {
   const formatDate = (dateStr) => {
@@ -90,9 +91,8 @@ const HomeRentsTable = ({ data = [], onEdit, onDelete }) => {
   };
 
   return (
-    <div className="relative">
-      <div className="overflow-x-auto shadow-md rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200 table-fixed">
+    <ScrollableTableWrapper className="shadow-md rounded-lg">
+      <table className="min-w-full divide-y divide-gray-200 table-fixed">
           <thead className="bg-gray-50">
             <tr>
               <th className="w-36 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contract Number</th>
@@ -178,8 +178,7 @@ const HomeRentsTable = ({ data = [], onEdit, onDelete }) => {
             })}
           </tbody>
         </table>
-      </div>
-    </div>
+      </ScrollableTableWrapper>
   );
 };
 

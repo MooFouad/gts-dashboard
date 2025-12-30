@@ -53,7 +53,17 @@
       "Bash(dir /s /b)",
       "Bash(git rm:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(dir:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx eslint:*)",
+      "Bash(del:*)",
+      "Bash(rm:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

@@ -90,23 +90,43 @@ router.post('/sync/:nin', async (req, res, next) => {
     // Map GOSI API response to our model
     const apiData = result.data;
 
+    // Map coverage array to products array with proper structure
+    const products = (apiData.engagements?.coverage || []).map(coverage => ({
+      productName: coverage.name?.english || '',
+      productNameAr: coverage.name?.arabic || '',
+      employerContribution: coverage.employerDeductionRate || 0,
+      employeeContribution: coverage.employeeDeductionRate || 0,
+      totalContribution: (coverage.employerDeductionRate || 0) + (coverage.employeeDeductionRate || 0),
+      deductionRate: (coverage.employerDeductionRate || 0) + (coverage.employeeDeductionRate || 0)
+    }));
+
+    // Calculate totals from products (deduction rates in percentages)
+    const totalEmployerContribution = products.reduce((sum, p) => sum + (p.employerContribution || 0), 0);
+    const totalEmployeeContribution = products.reduce((sum, p) => sum + (p.employeeContribution || 0), 0);
+    const totalContribution = totalEmployerContribution + totalEmployeeContribution;
+
     const gosiRecord = {
       nin: nin,
-      name: apiData.name || apiData.contributorName || apiData.englishName || '',
-      nameAr: apiData.nameAr || apiData.arabicName || '',
-      contributorType: apiData.contributorType || apiData.type || '',
-      establishmentRegNumber: apiData.establishmentRegNumber || process.env.GOSI_REGISTRATION_NUMBER || '',
+      name: apiData.fullName?.english || '',
+      nameAr: apiData.fullName?.arabic || '',
+      contributorType: apiData.engagements?.type || '',
+      establishmentRegNumber: apiData.engagements?.registrationNumber || process.env.GOSI_REGISTRATION_NUMBER || '',
       establishmentName: apiData.establishmentName || '',
-      engagementStartDate: apiData.engagementStartDate || apiData.startDate,
-      engagementEndDate: apiData.engagementEndDate || apiData.endDate,
-      engagementStatus: apiData.engagementStatus || apiData.status || '',
-      occupation: apiData.occupation || apiData.occupationName || '',
+      engagementStartDate: apiData.engagements?.startDate ? new Date(apiData.engagements.startDate) : null,
+      engagementEndDate: apiData.engagements?.endDate ? new Date(apiData.engagements.endDate) : null,
+      engagementStatus: apiData.engagements?.status || apiData.status || '',
+      occupation: apiData.occupation || '',
       occupationCode: apiData.occupationCode || '',
-      wage: apiData.wage || apiData.salary || apiData.basicSalary || 0,
+      wage: apiData.wage || 0,
       currency: apiData.currency || 'SAR',
 
-      // Products (social insurance subscriptions)
-      products: apiData.products || apiData.subscriptions || [],
+      // Products (social insurance coverage)
+      products: products,
+
+      // Totals (calculated from products)
+      totalEmployerContribution,
+      totalEmployeeContribution,
+      totalContribution,
 
       // Store full API response for reference
       fullApiResponse: apiData,
@@ -159,21 +179,39 @@ router.post('/sync-multiple', async (req, res, next) => {
       try {
         const apiData = item.data;
 
+        // Map coverage array to products array with proper structure
+        const products = (apiData.engagements?.coverage || []).map(coverage => ({
+          productName: coverage.name?.english || '',
+          productNameAr: coverage.name?.arabic || '',
+          employerContribution: coverage.employerDeductionRate || 0,
+          employeeContribution: coverage.employeeDeductionRate || 0,
+          totalContribution: (coverage.employerDeductionRate || 0) + (coverage.employeeDeductionRate || 0),
+          deductionRate: (coverage.employerDeductionRate || 0) + (coverage.employeeDeductionRate || 0)
+        }));
+
+        // Calculate totals from products (deduction rates in percentages)
+        const totalEmployerContribution = products.reduce((sum, p) => sum + (p.employerContribution || 0), 0);
+        const totalEmployeeContribution = products.reduce((sum, p) => sum + (p.employeeContribution || 0), 0);
+        const totalContribution = totalEmployerContribution + totalEmployeeContribution;
+
         const gosiRecord = {
           nin: item.nin,
-          name: apiData.name || apiData.contributorName || apiData.englishName || '',
-          nameAr: apiData.nameAr || apiData.arabicName || '',
-          contributorType: apiData.contributorType || apiData.type || '',
-          establishmentRegNumber: apiData.establishmentRegNumber || process.env.GOSI_REGISTRATION_NUMBER || '',
+          name: apiData.fullName?.english || '',
+          nameAr: apiData.fullName?.arabic || '',
+          contributorType: apiData.engagements?.type || '',
+          establishmentRegNumber: apiData.engagements?.registrationNumber || process.env.GOSI_REGISTRATION_NUMBER || '',
           establishmentName: apiData.establishmentName || '',
-          engagementStartDate: apiData.engagementStartDate || apiData.startDate,
-          engagementEndDate: apiData.engagementEndDate || apiData.endDate,
-          engagementStatus: apiData.engagementStatus || apiData.status || '',
-          occupation: apiData.occupation || apiData.occupationName || '',
+          engagementStartDate: apiData.engagements?.startDate ? new Date(apiData.engagements.startDate) : null,
+          engagementEndDate: apiData.engagements?.endDate ? new Date(apiData.engagements.endDate) : null,
+          engagementStatus: apiData.engagements?.status || apiData.status || '',
+          occupation: apiData.occupation || '',
           occupationCode: apiData.occupationCode || '',
-          wage: apiData.wage || apiData.salary || apiData.basicSalary || 0,
+          wage: apiData.wage || 0,
           currency: apiData.currency || 'SAR',
-          products: apiData.products || apiData.subscriptions || [],
+          products: products,
+          totalEmployerContribution,
+          totalEmployeeContribution,
+          totalContribution,
           fullApiResponse: apiData,
           lastSyncDate: new Date()
         };

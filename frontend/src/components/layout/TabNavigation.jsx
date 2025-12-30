@@ -1,9 +1,22 @@
 import React from 'react';
-import { Car, Home, Zap, FileText, Shield, Building2 } from 'lucide-react';
+import { Car, Home, Zap, FileText, Shield, Building2, Settings, Info } from 'lucide-react';
 // Commented out - No data available yet
 // import { FileCheck, ClipboardCheck } from 'lucide-react';
 
-const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, electricityCount, absherCount, socialInsuranceCount, gosiCount, insuranceCount, mvpiCount }) => {
+const TabNavigation = ({
+  activeTab,
+  onTabChange,
+  vehiclesCount,
+  homeRentsCount,
+  electricityCount,
+  absherCount,
+  socialInsuranceCount,
+  gosiCount,
+  insuranceCount,
+  mvpiCount,
+  onSettingsClick,
+  onDiagnosticsClick
+}) => {
   const handleTabChange = (tab) => {
     if (tab !== activeTab) {
       onTabChange(tab);
@@ -19,8 +32,9 @@ const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, 
 
   return (
     <div className="border-b overflow-x-auto bg-gray-50 sticky top-0 z-10 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-wrap sm:flex-nowrap min-w-max sm:min-w-0 gap-2 sm:gap-4">
+      <div className="w-full px-2">
+        <div className="flex items-center justify-between">
+          <div className="flex overflow-x-auto gap-1 flex-1">
           {/* replaced by Tamm */}
           {/* <button
             onClick={() => handleTabChange('vehicles')}
@@ -76,13 +90,32 @@ const TabNavigation = ({ activeTab, onTabChange, vehiclesCount, homeRentsCount, 
             <Shield size={20} />
             <span>Social Insurance ({socialInsuranceCount})</span>
           </button>
-          {/* <button
+          <button
             onClick={() => handleTabChange('gosi')}
             className={tabClasses('gosi')}
           >
-            <Building2 size={20} />
+            <img src="/gosi-logo.png" alt="GOSI" className="w-5 h-5" />
             <span>GOSI ({gosiCount})</span>
-          </button> */}
+          </button>
+          </div>
+
+          {/* Settings & Diagnostics Buttons */}
+          <div className="flex gap-1 ml-2">
+            <button
+              onClick={onDiagnosticsClick}
+              className="p-2 hover:bg-gray-200 rounded-lg transition flex-shrink-0"
+              title="Diagnostics"
+            >
+              <Info size={18} />
+            </button>
+            <button
+              onClick={onSettingsClick}
+              className="p-2 hover:bg-gray-200 rounded-lg transition flex-shrink-0"
+              title="Settings"
+            >
+              <Settings size={18} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

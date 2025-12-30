@@ -3,10 +3,11 @@ import { getRowColorClass } from '../../utils/styleUtils';
 import ExpiryIndicator from '../common/ExpiryIndicator';
 import StatusBadge from '../common/StatusBadge';
 import ActionButtons from '../common/ActionButtons';
+import ScrollableTableWrapper from '../common/ScrollableTableWrapper';
 
 const VehiclesTable = ({ data, onEdit, onDelete }) => {
   return (
-    <div className="overflow-x-auto -mx-2 sm:mx-0">
+    <ScrollableTableWrapper className="-mx-2 sm:mx-0">
     <table className="w-full min-w-[2000px]">
       <thead className="bg-gray-100 border-b">
         <tr>
@@ -96,7 +97,7 @@ const VehiclesTable = ({ data, onEdit, onDelete }) => {
         })}
       </tbody>
     </table>
-    </div>
+    </ScrollableTableWrapper>
   );
 };
 

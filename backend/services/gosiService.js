@@ -182,6 +182,7 @@ class GOSIService {
       });
 
       console.log('✅ GOSI contributor data fetched successfully');
+      console.log('📋 GOSI API Response Structure:', JSON.stringify(response.data, null, 2));
 
       return {
         success: true,

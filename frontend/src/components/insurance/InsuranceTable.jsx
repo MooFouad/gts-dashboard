@@ -1,6 +1,7 @@
 import React from 'react';
 import { getRowColorClass } from '../../utils/styleUtils';
 import { formatDate, calculateRemainingDays } from '../../utils/dateUtils';
+import ScrollableTableWrapper from '../common/ScrollableTableWrapper';
 
 const InsuranceTable = ({ data, onEdit, onDelete }) => {
   const getExpiryDate = (record) => {
@@ -10,7 +11,7 @@ const InsuranceTable = ({ data, onEdit, onDelete }) => {
   };
 
   return (
-    <div className="overflow-x-auto">
+    <ScrollableTableWrapper>
       <table className="min-w-full bg-white border border-gray-200">
         <thead className="bg-gray-50">
           <tr>
@@ -101,7 +102,7 @@ const InsuranceTable = ({ data, onEdit, onDelete }) => {
           )}
         </tbody>
       </table>
-    </div>
+    </ScrollableTableWrapper>
   );
 };
 

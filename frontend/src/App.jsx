@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Info } from 'lucide-react';
 import Header from './components/layout/Header';
-import TabNavigation from './components/layout/TabNavigation';
+import Sidebar from './components/layout/Sidebar';
 import StatusLegend from './components/common/StatusLegend';
 import HomeRentsContainer from './components/homeRents/HomeRentsContainer';
 import ElectricityContainer from './components/electricity/ElectricityContainer';
@@ -32,6 +31,8 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('absher');
   const [showSettings, setShowSettings] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [counts, setCounts] = useState({
     vehicles: 0,
     homeRents: 0,
@@ -102,72 +103,76 @@ const App = () => {
     setActiveTab(tab);
   };
 
+  const handleSettingsClick = () => {
+    setShowSettings(!showSettings);
+    setShowDiagnostics(false);
+  };
+
+  const handleDiagnosticsClick = () => {
+    setShowDiagnostics(!showDiagnostics);
+    setShowSettings(false);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const toggleSidebarCollapse = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 w-full overflow-hidden">
-      <Header />
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      <Header
+        sidebarCollapsed={sidebarCollapsed}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={toggleSidebar}
+      />
 
-      {/* Navigation with Settings and Diagnostics Buttons */}
-      <div className="bg-gray-50 border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-          <TabNavigation
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            vehiclesCount={counts.vehicles}
-            homeRentsCount={counts.homeRents}
-            electricityCount={counts.electricity}
-            absherCount={counts.absher}
-            socialInsuranceCount={counts.socialInsurance}
-            gosiCount={counts.gosi}
-            insuranceCount={counts.insurance}
-            mvpiCount={counts.mvpi}
-          />
-          
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                setShowDiagnostics(!showDiagnostics);
-                setShowSettings(false);
-              }}
-              className="p-2 hover:bg-gray-200 rounded-lg transition"
-              title="Notification Diagnostics"
-            >
-              <Info size={20} />
-            </button>
-            <button
-              onClick={() => {
-                setShowSettings(!showSettings);
-                setShowDiagnostics(false);
-              }}
-              className="p-2 hover:bg-gray-200 rounded-lg transition"
-              title="Notification Settings"
-            >
-              <Settings size={20} />
-            </button>
-          </div>
-        </div>
-      </div>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar - Mobile & Desktop */}
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          vehiclesCount={counts.vehicles}
+          homeRentsCount={counts.homeRents}
+          electricityCount={counts.electricity}
+          absherCount={counts.absher}
+          socialInsuranceCount={counts.socialInsurance}
+          gosiCount={counts.gosi}
+          insuranceCount={counts.insurance}
+          mvpiCount={counts.mvpi}
+          isOpen={sidebarOpen}
+          onToggle={toggleSidebar}
+          onSettingsClick={handleSettingsClick}
+          onDiagnosticsClick={handleDiagnosticsClick}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapse}
+        />
 
-      <StatusLegend />
+        {/* Main Content Area */}
+        <main className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebarCollapsed ? '' : 'md:ml-64'}`}>
+          <StatusLegend />
 
-      {/* Notification Diagnostics Panel */}
-      {showDiagnostics && (
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <React.Suspense fallback={<div className="text-center py-4">Loading...</div>}>
-            <NotificationDiagnostics />
-          </React.Suspense>
-        </div>
-      )}
+          {/* Notification Diagnostics Panel */}
+          {showDiagnostics && (
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <React.Suspense fallback={<div className="text-center py-4">Loading...</div>}>
+                <NotificationDiagnostics />
+              </React.Suspense>
+            </div>
+          )}
 
-      {/* Notification Settings Panel */}
-      {showSettings && (
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <React.Suspense fallback={<div className="text-center py-4">Loading...</div>}>
-            <NotificationSettings />
-          </React.Suspense>
-        </div>
-      )}
+          {/* Notification Settings Panel */}
+          {showSettings && (
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <React.Suspense fallback={<div className="text-center py-4">Loading...</div>}>
+                <NotificationSettings />
+              </React.Suspense>
+            </div>
+          )}
 
-      <div className="p-2 sm:p-4 overflow-x-auto">
+          <div className="p-2 sm:p-4">
         {/* replaced by Tamm api data */}
         {/* <div className={activeTab === 'vehicles' ? 'block' : 'hidden'}>
           <VehiclesContainer />
@@ -201,6 +206,8 @@ const App = () => {
         <div className={activeTab === 'gosi' ? 'block' : 'hidden'}>
           <GOSIContainer />
         </div>
+          </div>
+        </main>
       </div>
     </div>
   );
