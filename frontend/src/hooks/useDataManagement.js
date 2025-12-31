@@ -1,10 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
-export const useDataManagement = (type) => {
+export const useDataManagement = (type, options = {}) => {
+  const { usePagination = true, defaultPageSize = 25, searchTerm = '', filterStatus = 'all' } = options;
+
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(defaultPageSize);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const getEndpoint = (type) => {
     switch(type) {
@@ -30,18 +38,46 @@ export const useDataManagement = (type) => {
       setLoading(true);
       setError(null);
       const endpoint = getEndpoint(type);
-      const response = await api.get(endpoint);
-      // Handle new response format: { success: true, data: [...] }
-      const items = response?.data || response;
-      setData(Array.isArray(items) ? items : []);
+
+      // Build query params for pagination and search
+      const params = usePagination
+        ? { page: currentPage, limit: pageSize }
+        : { limit: 100000 }; // Fetch all items when pagination is disabled
+
+      // Add search term if provided
+      if (searchTerm && searchTerm.trim()) {
+        params.search = searchTerm.trim();
+      }
+
+      // Add status filter if provided and not 'all'
+      if (filterStatus && filterStatus !== 'all') {
+        params.status = filterStatus;
+      }
+
+      const response = await api.get(endpoint, params);
+
+      // Handle paginated response format: { success: true, data: [...], pagination: {...} }
+      if (response?.pagination) {
+        setData(Array.isArray(response.data) ? response.data : []);
+        setTotalItems(response.pagination.total);
+        setTotalPages(response.pagination.pages);
+      } else {
+        // Handle non-paginated response format: { success: true, data: [...] }
+        const items = response?.data || response;
+        setData(Array.isArray(items) ? items : []);
+        setTotalItems(Array.isArray(items) ? items.length : 0);
+        setTotalPages(1);
+      }
     } catch (err) {
       console.error(`Error fetching ${type}:`, err);
       setError(err.message);
       setData([]);
+      setTotalItems(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
-  }, [type]);
+  }, [type, currentPage, pageSize, usePagination, searchTerm, filterStatus]);
 
   useEffect(() => {
     fetchData();
@@ -122,6 +158,21 @@ export const useDataManagement = (type) => {
     }
   }, [type]);
 
+  // Pagination handlers
+  const handlePageChange = useCallback((newPage) => {
+    setCurrentPage(newPage);
+  }, []);
+
+  const handlePageSizeChange = useCallback((newPageSize) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
+  }, []);
+
+  // Reset to page 1 when search term or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
   return {
     data,
     loading,
@@ -129,6 +180,15 @@ export const useDataManagement = (type) => {
     addItem,
     updateItem,
     deleteItem,
-    refreshData: fetchData
+    refreshData: fetchData,
+    // Pagination
+    pagination: usePagination ? {
+      currentPage,
+      pageSize,
+      totalItems,
+      totalPages,
+      onPageChange: handlePageChange,
+      onPageSizeChange: handlePageSizeChange
+    } : null
   };
 };

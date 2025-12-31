@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import AbsherTable from './AbsherTable';
 import Toolbar from '../layout/Toolbar';
 import ExportButton from '../common/ExportButton';
+import Pagination from '../common/Pagination';
 import { useAuth } from '../../contexts/AuthContext';
 import { exportAbsherToExcel } from '../../utils/excel/excelUtils';
 import axios from 'axios';

@@ -63,13 +63,31 @@ router.get('/count/total', async (req, res, next) => {
   }
 });
 
-// GET all MVPI records
+// GET all MVPI records with pagination
 router.get('/', async (req, res, next) => {
   try {
-    const mvpiRecords = await MVPI.find({})
+    const { page = 1, limit = 25, search } = req.query;
+
+    const query = {};
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { plateNumber: { $regex: search, $options: 'i' } },
+        { sequenceNumber: { $regex: search, $options: 'i' } },
+        { ownerName: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const mvpiRecords = await MVPI.find(query)
+      .sort({ inspectionExpiryDate: 1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
       .lean()
-      .maxTimeMS(5000)
+      .maxTimeMS(10000)
       .exec();
+
+    const total = await MVPI.countDocuments(query).maxTimeMS(5000);
 
     const formattedRecords = mvpiRecords.map(record => ({
       ...record,
@@ -82,8 +100,13 @@ router.get('/', async (req, res, next) => {
 
     res.json({
       success: true,
-      count: formattedRecords.length,
-      data: formattedRecords
+      data: formattedRecords,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     next(error);

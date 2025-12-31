@@ -1,15 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import GOSITable from './GOSITable';
 import ConfirmDialog from '../common/ConfirmDialog';
 import Toolbar from '../layout/Toolbar';
+import Pagination from '../common/Pagination';
 import { useDataManagement } from '../../hooks/useDataManagement';
 import gosiService from '../../services/gosiService';
-import { RefreshCw, Upload, FileSpreadsheet, UserPlus } from 'lucide-react';
+import { RefreshCw, Upload, FileSpreadsheet, UserPlus, Trash2 } from 'lucide-react';
 
 const GOSIContainer = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
+  const [deleteAllDialog, setDeleteAllDialog] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState(null);
   const [addDialog, setAddDialog] = useState({ isOpen: false, nin: '' });
@@ -17,9 +19,16 @@ const GOSIContainer = () => {
   const [syncMessage, setSyncMessage] = useState(null);
   const fileInputRef = useRef(null);
 
-  const { data: items, deleteItem, loading, error, refreshData } = useDataManagement('gosi');
+  // Client-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
-  // Calculate actual status based on engagement dates (same logic as GOSITable)
+  // Fetch all items without server pagination for instant client-side search
+  const { data: items, deleteItem, loading, error, refreshData } = useDataManagement('gosi', {
+    usePagination: false
+  });
+
+  // Calculate actual status based on engagement dates
   const getActualStatus = (item) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -45,13 +54,14 @@ const GOSIContainer = () => {
     return 'inactive';
   };
 
+  // Client-side filtering (instant, no delay)
   const filteredItems = items.filter((item) => {
     // Search filter
-    const matchSearch = Object.values(item).some((val) =>
+    const matchSearch = !searchTerm || Object.values(item).some((val) =>
       String(val).toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Status filter - use calculated status instead of stored status
+    // Status filter
     let matchStatus = true;
     if (filterStatus !== 'all') {
       const actualStatus = getActualStatus(item);
@@ -60,6 +70,28 @@ const GOSIContainer = () => {
 
     return matchSearch && matchStatus;
   });
+
+  // Client-side pagination
+  const totalItems = filteredItems.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
 
   const handleDelete = (id) => {
     setDeleteDialog({ isOpen: true, id });
@@ -70,6 +102,34 @@ const GOSIContainer = () => {
       await deleteItem(deleteDialog.id);
       setDeleteDialog({ isOpen: false, id: null });
       await refreshData();
+    }
+  };
+
+  const handleDeleteAll = () => {
+    setDeleteAllDialog(true);
+  };
+
+  const confirmDeleteAll = async () => {
+    try {
+      const itemIds = items.map(item => item._id);
+
+      if (itemIds.length === 0) {
+        alert('No items to delete');
+        return;
+      }
+
+      console.log(`🗑️ Deleting all ${itemIds.length} GOSI records...`);
+
+      // Call bulk delete API
+      await gosiService.bulkDelete(itemIds);
+
+      setDeleteAllDialog(false);
+      await refreshData();
+
+      console.log('✅ All GOSI records deleted successfully');
+    } catch (error) {
+      console.error('Error deleting all records:', error);
+      alert('Failed to delete all records. Please try again.');
     }
   };
 
@@ -201,7 +261,7 @@ const GOSIContainer = () => {
           <h2 className="text-xl font-semibold">GOSI (Social Insurance)</h2>
           <p className="text-sm text-gray-600">Engagement Deduction API Data</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-wrap gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -209,41 +269,42 @@ const GOSIContainer = () => {
             onChange={handleFileChange}
             className="hidden"
           />
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={handleAddEmployee}
-              disabled={syncing}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 flex items-center gap-2"
-              title="Add single employee by NIN/Iqama"
-            >
-              <UserPlus size={18} />
-              Add Single Employee
-            </button>
-          </div>
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={handleFileSelect}
-              disabled={importing}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
-              title="Upload Excel file with employee Iqama numbers"
-            >
-              {importing ? (
-                <>
-                  <RefreshCw size={18} className="animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Upload size={18} />
-                  Import from Excel
-                </>
-              )}
-            </button>
-            <p className="text-xs text-gray-500 flex items-center gap-1">
-              <FileSpreadsheet size={12} />
-              Excel: NIN, Iqama, or National ID
-            </p>
-          </div>
+          <button
+            onClick={handleAddEmployee}
+            disabled={syncing}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 flex items-center gap-2"
+            title="Add single employee by NIN/Iqama"
+          >
+            <UserPlus size={18} />
+            Add Single Employee
+          </button>
+          <button
+            onClick={handleFileSelect}
+            disabled={importing}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
+            title="Upload Excel file with employee Iqama numbers"
+          >
+            {importing ? (
+              <>
+                <RefreshCw size={18} className="animate-spin" />
+                Importing...
+              </>
+            ) : (
+              <>
+                <Upload size={18} />
+                Import from Excel
+              </>
+            )}
+          </button>
+          <button
+            onClick={handleDeleteAll}
+            disabled={items.length === 0}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 flex items-center gap-2"
+            title="Delete all GOSI records"
+          >
+            <Trash2 size={18} />
+            Delete All ({items.length})
+          </button>
         </div>
       </div>
 
@@ -263,7 +324,7 @@ const GOSIContainer = () => {
         onSearchChange={setSearchTerm}
         filterStatus={filterStatus}
         onFilterChange={setFilterStatus}
-        totalItems={items.length}
+        totalItems={filteredItems.length}
         statusOptions={[
           { value: 'all', label: 'All Status' },
           { value: 'active', label: 'Active' },
@@ -274,9 +335,20 @@ const GOSIContainer = () => {
       />
 
       <GOSITable
-        data={filteredItems}
+        data={paginatedItems}
         onDelete={handleDelete}
       />
+
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      )}
 
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
@@ -284,6 +356,14 @@ const GOSIContainer = () => {
         message="Are you sure you want to delete this GOSI record? This action cannot be undone."
         onConfirm={confirmDelete}
         onCancel={() => setDeleteDialog({ isOpen: false, id: null })}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteAllDialog}
+        title="Delete All GOSI Records"
+        message={`Are you sure you want to delete ALL ${items.length} GOSI records? This action cannot be undone and will permanently remove all employee data from the database.`}
+        onConfirm={confirmDeleteAll}
+        onCancel={() => setDeleteAllDialog(false)}
       />
 
       {/* Add Single Employee Dialog */}

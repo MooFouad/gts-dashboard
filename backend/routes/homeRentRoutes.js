@@ -9,14 +9,41 @@ const {
   deleteHomeRentValidator
 } = require('../validators/homeRentValidator');
 
-// GET all home rents
+// GET all home rents with pagination
 router.get('/', async (req, res, next) => {
   try {
-    const homeRents = await HomeRent.find({}).lean().maxTimeMS(5000).exec();
+    const { page = 1, limit = 25, search } = req.query;
+
+    const query = {};
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } },
+        { contractNumber: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const homeRents = await HomeRent.find(query)
+      .sort({ contractStartingDate: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .lean()
+      .maxTimeMS(10000)
+      .exec();
+
+    const total = await HomeRent.countDocuments(query).maxTimeMS(5000);
+
     res.json({
       success: true,
-      count: homeRents.length,
-      data: homeRents
+      data: homeRents,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     next(error);

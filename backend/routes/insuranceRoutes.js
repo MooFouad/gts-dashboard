@@ -63,13 +63,32 @@ router.get('/count/total', async (req, res, next) => {
   }
 });
 
-// GET all insurance records
+// GET all insurance records with pagination
 router.get('/', async (req, res, next) => {
   try {
-    const insuranceRecords = await Insurance.find({})
+    const { page = 1, limit = 25, search } = req.query;
+
+    const query = {};
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { plateNumber: { $regex: search, $options: 'i' } },
+        { sequenceNumber: { $regex: search, $options: 'i' } },
+        { policyNumber: { $regex: search, $options: 'i' } },
+        { ownerName: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const insuranceRecords = await Insurance.find(query)
+      .sort({ policyEndDate: 1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
       .lean()
-      .maxTimeMS(5000)
+      .maxTimeMS(10000)
       .exec();
+
+    const total = await Insurance.countDocuments(query).maxTimeMS(5000);
 
     const formattedRecords = insuranceRecords.map(record => ({
       ...record,
@@ -82,8 +101,13 @@ router.get('/', async (req, res, next) => {
 
     res.json({
       success: true,
-      count: formattedRecords.length,
-      data: formattedRecords
+      data: formattedRecords,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     next(error);

@@ -129,13 +129,32 @@ router.get('/count/total', async (req, res, next) => {
   }
 });
 
-// GET all absher records
+// GET all absher records with pagination
 router.get('/', async (req, res, next) => {
   try {
-    const absherRecords = await Absher.find({})
+    const { page = 1, limit = 25, search } = req.query;
+
+    const query = {};
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { nin: { $regex: search, $options: 'i' } },
+        { iqamaNumber: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: 'i' } },
+        { serviceType: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const absherRecords = await Absher.find(query)
+      .sort({ expiryDate: 1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
       .lean()
-      .maxTimeMS(5000)
+      .maxTimeMS(10000)
       .exec();
+
+    const total = await Absher.countDocuments(query).maxTimeMS(5000);
 
     const formattedRecords = absherRecords.map(record => ({
       ...record,
@@ -156,8 +175,13 @@ router.get('/', async (req, res, next) => {
 
     res.json({
       success: true,
-      count: absherRecords.length,
-      data: formattedRecords
+      data: formattedRecords,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     if (error.name === 'MongooseError' && error.message.includes('timed out')) {

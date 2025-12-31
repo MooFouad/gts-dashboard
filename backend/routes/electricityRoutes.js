@@ -9,18 +9,41 @@ const {
   deleteElectricityValidator
 } = require('../validators/electricityValidator');
 
-// GET all electricity bills
+// GET all electricity bills with pagination
 router.get('/', async (req, res, next) => {
   try {
-    const bills = await Electricity.find({})
+    const { page = 1, limit = 25, search } = req.query;
+
+    const query = {};
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { accountNumber: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } },
+        { meterNumber: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const bills = await Electricity.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
       .lean()
-      .sort({ createdAt: 1 })
-      .maxTimeMS(5000)
+      .maxTimeMS(10000)
       .exec();
+
+    const total = await Electricity.countDocuments(query).maxTimeMS(5000);
+
     res.json({
       success: true,
-      count: bills.length,
-      data: bills
+      data: bills,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     next(error);

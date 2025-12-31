@@ -16,14 +16,31 @@ router.get('/count/total', async (req, res, next) => {
   }
 });
 
-// GET all social insurance records
+// GET all social insurance records with pagination
 router.get('/', async (req, res, next) => {
   try {
-    const records = await SocialInsurance.find({})
+    const { page = 1, limit = 25, search } = req.query;
+
+    const query = {};
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { nationalId: { $regex: search, $options: 'i' } },
+        { division: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const records = await SocialInsurance.find(query)
       .sort({ endDate: 1 }) // Sort by end date (soonest to expire first)
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
       .lean()
-      .maxTimeMS(5000)
+      .maxTimeMS(10000)
       .exec();
+
+    const total = await SocialInsurance.countDocuments(query).maxTimeMS(5000);
 
     // Format dates and add remainingDays to each record
     const formattedRecords = records.map(record => {
@@ -48,8 +65,13 @@ router.get('/', async (req, res, next) => {
 
     res.json({
       success: true,
-      count: records.length,
-      data: formattedRecords
+      data: formattedRecords,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     if (error.name === 'MongooseError' && error.message.includes('timed out')) {

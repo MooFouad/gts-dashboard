@@ -9,13 +9,31 @@ const {
   deleteVehicleValidator
 } = require('../validators/vehicleValidator');
 
-// GET all vehicles
+// GET all vehicles with pagination
 router.get('/', async (req, res, next) => {
   try {
-    const vehicles = await Vehicle.find({})
+    const { page = 1, limit = 25, search } = req.query;
+
+    const query = {};
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { plateNumber: { $regex: search, $options: 'i' } },
+        { model: { $regex: search, $options: 'i' } },
+        { type: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const vehicles = await Vehicle.find(query)
+      .sort({ licenseExpiryDate: 1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
       .lean()
-      .maxTimeMS(5000)
+      .maxTimeMS(10000)
       .exec();
+
+    const total = await Vehicle.countDocuments(query).maxTimeMS(5000);
 
     const formattedVehicles = vehicles.map(vehicle => ({
       ...vehicle,
@@ -29,8 +47,13 @@ router.get('/', async (req, res, next) => {
 
     res.json({
       success: true,
-      count: vehicles.length,
-      data: formattedVehicles
+      data: formattedVehicles,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     if (error.name === 'MongooseError' && error.message.includes('timed out')) {

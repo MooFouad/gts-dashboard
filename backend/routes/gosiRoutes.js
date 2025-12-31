@@ -286,14 +286,9 @@ router.post('/bulk-delete', async (req, res, next) => {
  */
 router.get('/', async (req, res, next) => {
   try {
-    const { page = 1, limit = 50, status, search } = req.query;
+    const { page = 1, limit = 25, status, search } = req.query;
 
     const query = {};
-
-    // Status filter
-    if (status && status !== 'all') {
-      query.status = status;
-    }
 
     // Search filter
     if (search) {
@@ -303,6 +298,27 @@ router.get('/', async (req, res, next) => {
         { nameAr: { $regex: search, $options: 'i' } },
         { occupation: { $regex: search, $options: 'i' } }
       ];
+    }
+
+    // Status filter based on engagement dates
+    if (status && status !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (status === 'terminated') {
+        // Records with end date in the past
+        query.engagementEndDate = { $lt: today };
+      } else if (status === 'active') {
+        // Records with start date <= today and (no end date OR end date >= today)
+        query.engagementStartDate = { $lte: today };
+        query.$or = [
+          { engagementEndDate: { $gte: today } },
+          { engagementEndDate: null }
+        ];
+      } else if (status === 'inactive') {
+        // Records with start date in the future
+        query.engagementStartDate = { $gt: today };
+      }
     }
 
     const records = await GOSI.find(query)

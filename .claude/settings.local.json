@@ -63,7 +63,8 @@
       "Bash(npx eslint:*)",
       "Bash(del:*)",
       "Bash(rm:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(git config:*)"
     ],
     "deny": [],
     "ask": []

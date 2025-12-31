@@ -5,6 +5,7 @@ import FormDialog from '../common/FormDialog';
 import ConfirmDialog from '../common/ConfirmDialog';
 import Toolbar from '../layout/Toolbar';
 import ExportButton from '../common/ExportButton';
+import Pagination from '../common/Pagination';
 import { useDataManagement } from '../../hooks/useDataManagement';
 import { exportElectricityToExcel } from '../../utils/excel/excelUtils';
 
@@ -13,7 +14,7 @@ const ElectricityContainer = () => {
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const { data: items, addItem, updateItem, deleteItem, loading, error, refreshData } = useDataManagement('electricity');
+  const { data: items, addItem, updateItem, deleteItem, loading, error, refreshData, pagination } = useDataManagement('electricity');
 
   const filteredItems = items.filter((item) => {
     // Search filter
@@ -146,7 +147,7 @@ const ElectricityContainer = () => {
         onSearchChange={setSearchTerm}
         filterStatus={filterStatus}
         onFilterChange={setFilterStatus}
-        totalItems={items.length}
+        totalItems={pagination?.totalItems || items.length}
       />
 
       <ElectricityTable
@@ -154,6 +155,17 @@ const ElectricityContainer = () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
+
+      {pagination && pagination.totalPages > 1 && (
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageSize}
+          onPageChange={pagination.onPageChange}
+          onPageSizeChange={pagination.onPageSizeChange}
+        />
+      )}
 
       <FormDialog
         isOpen={formDialog.isOpen}

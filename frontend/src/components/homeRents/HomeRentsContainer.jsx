@@ -4,6 +4,7 @@ import HomeRentForm from './HomeRentForm';
 import FormDialog from '../common/FormDialog';
 import ConfirmDialog from '../common/ConfirmDialog';
 import Toolbar from '../layout/Toolbar';
+import Pagination from '../common/Pagination';
 import ExportButton from '../common/ExportButton';
 import { useDataManagement } from '../../hooks/useDataManagement';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,7 +16,7 @@ const HomeRentsContainer = () => {
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const { data: items, addItem, updateItem, deleteItem, loading, error, refreshData } = useDataManagement('homeRent');
+  const { data: items, addItem, updateItem, deleteItem, loading, error, refreshData, pagination } = useDataManagement('homeRent');
 
   const filteredItems = items.filter((item) => {
     // Search filter
@@ -146,7 +147,7 @@ const HomeRentsContainer = () => {
         onSearchChange={setSearchTerm}
         filterStatus={filterStatus}
         onFilterChange={setFilterStatus}
-        totalItems={items.length}
+        totalItems={pagination?.totalItems || items.length}
       />
 
       <HomeRentsTable
@@ -154,6 +155,17 @@ const HomeRentsContainer = () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
+
+      {pagination && pagination.totalPages > 1 && (
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageSize}
+          onPageChange={pagination.onPageChange}
+          onPageSizeChange={pagination.onPageSizeChange}
+        />
+      )}
 
       <FormDialog
         isOpen={formDialog.isOpen}
