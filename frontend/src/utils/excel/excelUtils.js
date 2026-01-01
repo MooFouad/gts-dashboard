@@ -335,6 +335,90 @@ export const exportAbsherToExcel = (records) => {
 };
 
 /**
+ * Export GOSI data to Excel
+ */
+export const exportGOSIToExcel = (records) => {
+  if (!records || records.length === 0) {
+    alert('No data to export');
+    return;
+  }
+
+  // Calculate actual status based on engagement dates
+  const getActualStatus = (item) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (item.engagementEndDate) {
+      const endDate = new Date(item.engagementEndDate);
+      endDate.setHours(0, 0, 0, 0);
+
+      if (endDate < today) {
+        return 'terminated';
+      }
+    }
+
+    if (item.engagementStartDate) {
+      const startDate = new Date(item.engagementStartDate);
+      startDate.setHours(0, 0, 0, 0);
+
+      if (startDate <= today) {
+        return 'active';
+      }
+    }
+
+    return 'inactive';
+  };
+
+  // Format date to readable string
+  const formatDate = (date) => {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Select only the fields that appear in the table
+  const exportData = records.map(record => ({
+    'NIN': record.nin || '',
+    'Name (English)': record.name || '',
+    'Name (Arabic)': record.nameAr || '',
+    'Occupation': record.occupation || '',
+    'Engagement Start Date': formatDate(record.engagementStartDate),
+    'Engagement End Date': record.engagementEndDate ? formatDate(record.engagementEndDate) : 'Ongoing',
+    'Employer Contribution (%)': record.totalEmployerContribution || '',
+    'Employee Contribution (%)': record.totalEmployeeContribution || '',
+    'Total Contribution (%)': record.totalContribution || '',
+    'Status': getActualStatus(record).toUpperCase(),
+    'Last Sync Date': formatDate(record.lastSyncDate)
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(exportData);
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 15 }, // NIN
+    { wch: 25 }, // Name (English)
+    { wch: 25 }, // Name (Arabic)
+    { wch: 30 }, // Occupation
+    { wch: 22 }, // Engagement Start Date
+    { wch: 22 }, // Engagement End Date
+    { wch: 25 }, // Employer Contribution
+    { wch: 25 }, // Employee Contribution
+    { wch: 22 }, // Total Contribution
+    { wch: 15 }, // Status
+    { wch: 18 }  // Last Sync Date
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'GOSI Records');
+
+  const timestamp = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `GOSI_Export_${timestamp}.xlsx`);
+};
+
+/**
  * Export all data to a single Excel file with multiple sheets (only table columns)
  */
 export const exportAllDataToExcel = (vehicles, homeRents, electricity) => {

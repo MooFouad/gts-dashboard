@@ -293,6 +293,10 @@ router.post('/electricity', upload.single('file'), async (req, res) => {
 // Import GOSI Employee Iqama Numbers and Bulk Sync
 router.post('/gosi', upload.single('file'), async (req, res) => {
   try {
+    // Increase timeout for large imports (30 minutes)
+    req.setTimeout(30 * 60 * 1000); // 30 minutes
+    res.setTimeout(30 * 60 * 1000); // 30 minutes
+
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }

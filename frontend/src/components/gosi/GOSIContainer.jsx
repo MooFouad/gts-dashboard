@@ -3,8 +3,10 @@ import GOSITable from './GOSITable';
 import ConfirmDialog from '../common/ConfirmDialog';
 import Toolbar from '../layout/Toolbar';
 import Pagination from '../common/Pagination';
+import ExportButton from '../common/ExportButton';
 import { useDataManagement } from '../../hooks/useDataManagement';
 import gosiService from '../../services/gosiService';
+import { exportGOSIToExcel } from '../../utils/excel/excelUtils';
 import { RefreshCw, Upload, FileSpreadsheet, UserPlus, Trash2 } from 'lucide-react';
 
 const GOSIContainer = () => {
@@ -130,6 +132,15 @@ const GOSIContainer = () => {
     } catch (error) {
       console.error('Error deleting all records:', error);
       alert('Failed to delete all records. Please try again.');
+    }
+  };
+
+  const handleExport = () => {
+    try {
+      exportGOSIToExcel(filteredItems);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export data to Excel. Please try again.');
     }
   };
 
@@ -268,6 +279,11 @@ const GOSIContainer = () => {
             accept=".xlsx,.xls"
             onChange={handleFileChange}
             className="hidden"
+          />
+          <ExportButton
+            onClick={handleExport}
+            label="Export to Excel"
+            isLoading={false}
           />
           <button
             onClick={handleAddEmployee}
