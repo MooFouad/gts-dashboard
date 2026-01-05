@@ -22,8 +22,8 @@ const pushSubscriptionSchema = new mongoose.Schema({
   },
   notificationTypes: {
     type: [String],
-    enum: ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance'],
-    default: ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance']
+    enum: ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance', 'gosi'],
+    default: ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance', 'gosi']
   },
   userAgent: String,
   createdAt: {

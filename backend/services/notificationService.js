@@ -431,7 +431,10 @@ class NotificationService {
       const typeTitles = {
         vehicle: '🚗 Vehicle Alerts',
         homeRent: '🏠 Home Rent Alerts',
-        electricity: '⚡ Electricity Bill Alerts'
+        electricity: '⚡ Electricity Bill Alerts',
+        absher: '📋 Tamm Alerts',
+        socialInsurance: '🛡️ Social Insurance Alerts',
+        gosi: '👥 GOSI Alerts'
       };
       const typeTitle = typeTitles[type] || 'Alerts';
 
@@ -538,7 +541,8 @@ class NotificationService {
       homeRent: notifications.filter(n => n.type === 'homeRent'),
       electricity: notifications.filter(n => n.type === 'electricity'),
       absher: notifications.filter(n => n.type === 'absher'),
-      socialInsurance: notifications.filter(n => n.type === 'socialInsurance')
+      socialInsurance: notifications.filter(n => n.type === 'socialInsurance'),
+      gosi: notifications.filter(n => n.type === 'gosi')
     };
 
     let pushSent = 0;
@@ -566,7 +570,7 @@ class NotificationService {
         // Get emails subscribed to vehicle notifications
         const vehicleEmails = [...new Set(
           pushSubscriptions
-            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance']).includes('vehicle'))
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance', 'gosi']).includes('vehicle'))
             .map(sub => sub.userEmail)
         )];
 
@@ -579,7 +583,7 @@ class NotificationService {
         // Get emails subscribed to homeRent notifications
         const homeRentEmails = [...new Set(
           pushSubscriptions
-            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance']).includes('homeRent'))
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance', 'gosi']).includes('homeRent'))
             .map(sub => sub.userEmail)
         )];
 
@@ -592,7 +596,7 @@ class NotificationService {
         // Get emails subscribed to electricity notifications
         const electricityEmails = [...new Set(
           pushSubscriptions
-            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance']).includes('electricity'))
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance', 'gosi']).includes('electricity'))
             .map(sub => sub.userEmail)
         )];
 
@@ -605,7 +609,7 @@ class NotificationService {
         // Get emails subscribed to absher notifications
         const absherEmails = [...new Set(
           pushSubscriptions
-            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance']).includes('absher'))
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance', 'gosi']).includes('absher'))
             .map(sub => sub.userEmail)
         )];
 
@@ -618,12 +622,25 @@ class NotificationService {
         // Get emails subscribed to socialInsurance notifications
         const socialInsuranceEmails = [...new Set(
           pushSubscriptions
-            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance']).includes('socialInsurance'))
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance', 'gosi']).includes('socialInsurance'))
             .map(sub => sub.userEmail)
         )];
 
         console.log(`\n📧 Sending grouped social insurance email to ${socialInsuranceEmails.length} recipient(s) (${groupedNotifications.socialInsurance.length} items)`);
         const result = await this.sendGroupedEmailNotification(groupedNotifications.socialInsurance, 'socialInsurance', socialInsuranceEmails);
+        if (result.success) emailSent++;
+      }
+
+      if (groupedNotifications.gosi.length > 0) {
+        // Get emails subscribed to gosi notifications
+        const gosiEmails = [...new Set(
+          pushSubscriptions
+            .filter(sub => (sub.notificationTypes || ['vehicle', 'homeRent', 'electricity', 'absher', 'socialInsurance', 'gosi']).includes('gosi'))
+            .map(sub => sub.userEmail)
+        )];
+
+        console.log(`\n📧 Sending grouped GOSI email to ${gosiEmails.length} recipient(s) (${groupedNotifications.gosi.length} items)`);
+        const result = await this.sendGroupedEmailNotification(groupedNotifications.gosi, 'gosi', gosiEmails);
         if (result.success) emailSent++;
       }
     } else {
