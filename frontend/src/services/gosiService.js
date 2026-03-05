@@ -1,5 +1,7 @@
 import api from './api';
 
+const GOSI_TIMEOUT = 60000; // GOSI sync needs two external API calls, allow up to 60s
+
 /**
  * GOSI Service
  * Frontend service for GOSI API integration and CRUD operations
@@ -74,7 +76,7 @@ export const bulkDelete = async (ids) => {
  * @returns {Promise<Object>} - Synced employee data
  */
 export const syncEmployee = async (nin) => {
-  return await api.post(`/gosi/sync/${nin}`);
+  return await api.post(`/gosi/sync/${nin}`, undefined, { timeout: GOSI_TIMEOUT });
 };
 
 /**
@@ -83,7 +85,7 @@ export const syncEmployee = async (nin) => {
  * @returns {Promise<Object>} - Sync results
  */
 export const syncMultipleEmployees = async (ninList) => {
-  return await api.post('/gosi/sync-multiple', { ninList });
+  return await api.post('/gosi/sync-multiple', { ninList }, { timeout: GOSI_TIMEOUT });
 };
 
 /**

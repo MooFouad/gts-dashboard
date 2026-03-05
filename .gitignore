@@ -71,6 +71,12 @@ DEPLOY_*.md
 coverage/
 .nyc_output/
 
+# Explanation/Documentation folder (private)
+explain/
+
+# Docs folder
+docs/
+
 # Misc
 .cache/
 .parcel-cache/

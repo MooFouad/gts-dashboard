@@ -2,6 +2,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
+const DEFAULT_TIMEOUT = 15000;
 
 // Get auth token
 const getAuthToken = () => {
@@ -15,8 +16,9 @@ class ApiService {
 
   async request(endpoint, options = {}, retryCount = 0) {
     try {
+      const timeout = options.timeout || DEFAULT_TIMEOUT;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       // Add auth token to headers
       const token = getAuthToken();
@@ -61,7 +63,9 @@ class ApiService {
       console.error(`API Error (attempt ${retryCount + 1}/${MAX_RETRIES}):`, error);
 
       if (error.name === 'AbortError') {
-        console.error('Request timed out after 15 seconds');
+        const timeoutSec = (options.timeout || DEFAULT_TIMEOUT) / 1000;
+        console.error(`Request timed out after ${timeoutSec} seconds`);
+        throw new Error(`Request timed out after ${timeoutSec} seconds`);
       }
 
       // Don't retry on 401 errors
@@ -85,10 +89,11 @@ class ApiService {
     return this.request(url, { method: 'GET' });
   }
 
-  async post(endpoint, data) {
+  async post(endpoint, data, options = {}) {
     return this.request(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
+      ...options,
     });
   }
 

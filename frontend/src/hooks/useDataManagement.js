@@ -158,6 +158,20 @@ export const useDataManagement = (type, options = {}) => {
     }
   }, [type]);
 
+  // Update or insert a single item in local state without a full refresh
+  const upsertLocalItem = useCallback((item) => {
+    setData(prev => {
+      const idx = prev.findIndex(i => i._id === item._id);
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = item;
+        return next;
+      }
+      setTotalItems(t => t + 1);
+      return [item, ...prev];
+    });
+  }, []);
+
   // Pagination handlers
   const handlePageChange = useCallback((newPage) => {
     setCurrentPage(newPage);
@@ -180,6 +194,7 @@ export const useDataManagement = (type, options = {}) => {
     addItem,
     updateItem,
     deleteItem,
+    upsertLocalItem,
     refreshData: fetchData,
     // Pagination
     pagination: usePagination ? {

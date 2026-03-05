@@ -26,7 +26,7 @@ const GOSIContainer = () => {
   const [pageSize, setPageSize] = useState(25);
 
   // Fetch all items without server pagination for instant client-side search
-  const { data: items, deleteItem, loading, error, refreshData } = useDataManagement('gosi', {
+  const { data: items, deleteItem, loading, error, refreshData, upsertLocalItem } = useDataManagement('gosi', {
     usePagination: false
   });
 
@@ -168,8 +168,10 @@ const GOSIContainer = () => {
         text: `Successfully synced: ${result.data?.name || addDialog.nin}`
       });
 
-      // Refresh data after successful sync
-      await refreshData();
+      // Update local state directly — no need to re-fetch all 167+ records
+      if (result.data) {
+        upsertLocalItem(result.data);
+      }
 
       // Close dialog after 2 seconds
       setTimeout(() => {
