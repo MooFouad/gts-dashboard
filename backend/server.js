@@ -38,8 +38,6 @@ const mongooseOptions = {
   maxPoolSize: 10,
   family: 4, // Force IPv4
   directConnection: false, // Let MongoDB handle cluster discovery
-  tls: true, // Explicitly enable TLS
-  tlsAllowInvalidCertificates: false,
   retryWrites: true,
   retryReads: true,
   heartbeatFrequencyMS: 10000, // Detect disconnects faster
