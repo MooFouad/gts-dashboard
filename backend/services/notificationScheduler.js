@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const notificationService = require('./notificationService');
+const { runScheduledBackup } = require('../scripts/scheduledBackup');
 
 /**
  * Notification Scheduler for Render
@@ -45,6 +46,18 @@ class NotificationScheduler {
         console.error('❌ Error in scheduled notification check:', error);
       }
       console.log('========== NOTIFICATION CHECK COMPLETE ==========\n');
+    });
+
+    // Schedule daily backup at 3 AM
+    cron.schedule('0 3 * * *', async () => {
+      console.log('\n💾 ========== SCHEDULED DAILY BACKUP ==========');
+      console.log(`Time: ${new Date().toLocaleString()}`);
+      try {
+        await runScheduledBackup();
+      } catch (error) {
+        console.error('❌ Error in scheduled backup:', error);
+      }
+      console.log('========== BACKUP COMPLETE ==========\n');
     });
 
     // Optional: Run immediately on startup (for testing)

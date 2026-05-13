@@ -36,8 +36,31 @@ const errorHandler = (err, req, res, next) => {
   }
 };
 
+// MongoDB error names that should NOT crash the server
+const MONGO_ERRORS = [
+  'MongoNetworkError',
+  'MongoServerSelectionError',
+  'MongoTimeoutError',
+  'MongoNetworkTimeoutError',
+  'MongoWriteConcernError',
+];
+
+const isMongoError = (err) => {
+  return MONGO_ERRORS.includes(err.name) ||
+    err.name === 'MongooseError' ||
+    err.message?.includes('ECONNREFUSED') ||
+    err.message?.includes('ETIMEDOUT') ||
+    err.message?.includes('querySrv') ||
+    err.message?.includes('MongoDB') ||
+    err.message?.includes('buffering timed out');
+};
+
 // Handle unhandled promise rejections
 const handleUnhandledRejection = (err) => {
+  if (isMongoError(err)) {
+    console.error('⚠️ MongoDB connection error (server will keep running):', err.name, err.message);
+    return;
+  }
   console.error('UNHANDLED REJECTION! 💥 Shutting down...');
   console.error(err.name, err.message);
   process.exit(1);
@@ -45,6 +68,10 @@ const handleUnhandledRejection = (err) => {
 
 // Handle uncaught exceptions
 const handleUncaughtException = (err) => {
+  if (isMongoError(err)) {
+    console.error('⚠️ MongoDB connection error (server will keep running):', err.name, err.message);
+    return;
+  }
   console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
   console.error(err.name, err.message);
   process.exit(1);

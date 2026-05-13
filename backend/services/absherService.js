@@ -24,8 +24,31 @@ class TammService {
    */
   async initializeConfig() {
     try {
-      // Try to load from database first
-      const dbConfig = await AbsherConfig.findOne({ status: 'active' });
+      // Wait for mongoose connection before querying
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState !== 1) {
+        console.log('⏳ Absher Service waiting for MongoDB connection...');
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            resolve(); // Don't reject, fall through to env vars
+          }, 15000);
+          if (mongoose.connection.readyState === 1) {
+            clearTimeout(timeout);
+            resolve();
+          } else {
+            mongoose.connection.once('connected', () => {
+              clearTimeout(timeout);
+              resolve();
+            });
+          }
+        });
+      }
+
+      // Try to load from database first (only if connected)
+      let dbConfig = null;
+      if (mongoose.connection.readyState === 1) {
+        dbConfig = await AbsherConfig.findOne({ status: 'active' });
+      }
 
       if (dbConfig) {
         // Build auth URL from database config
@@ -75,7 +98,7 @@ class TammService {
       console.error('❌ Error initializing Absher Service configuration:', error.message);
       this.initializationError = error;
       this.configLoaded = true; // Mark as "loaded" (failed) to stop waiting
-      throw error; // Re-throw to be caught in getConfig
+      // Don't throw - let the service start anyway, config can be reloaded later
     }
   }
 

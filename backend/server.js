@@ -20,6 +20,9 @@ const { errorHandler, handleUnhandledRejection, handleUncaughtException } = requ
 // Authentication middleware
 const { authenticate, authorize } = require('./middleware/auth');
 
+// DB health check middleware
+const dbHealthCheck = require('./middleware/dbHealthCheck');
+
 // Notification scheduler
 const notificationScheduler = require('./services/notificationScheduler');
 
@@ -30,49 +33,90 @@ const app = express();
 
 // MongoDB connection options
 const mongooseOptions = {
-  serverSelectionTimeoutMS: 30000,
+  serverSelectionTimeoutMS: 45000,
   socketTimeoutMS: 45000,
   maxPoolSize: 10,
   family: 4, // Force IPv4
   directConnection: false, // Let MongoDB handle cluster discovery
   tls: true, // Explicitly enable TLS
-  tlsAllowInvalidCertificates: false
+  tlsAllowInvalidCertificates: false,
+  retryWrites: true,
+  retryReads: true,
+  heartbeatFrequencyMS: 10000, // Detect disconnects faster
 };
+
+// Track connection state
+let isReconnecting = false;
 
 // MongoDB connection with retry logic
 const connectDB = async () => {
-  const maxRetries = 3;
+  const maxRetries = 5;
   let retries = 0;
 
   while (retries < maxRetries) {
     try {
+      const delay = Math.min(1000 * Math.pow(2, retries), 16000); // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+      if (retries > 0) {
+        console.log(`⏳ Waiting ${delay / 1000}s before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
       console.log(`🔄 Attempting to connect to MongoDB (Attempt ${retries + 1}/${maxRetries})...`);
       await mongoose.connect(process.env.MONGODB_URI, mongooseOptions);
       console.log('✅ MongoDB Connected Successfully');
+      isReconnecting = false;
       return;
     } catch (err) {
       retries++;
       console.error(`❌ MongoDB Connection Error (Attempt ${retries}/${maxRetries}):`, err.message);
 
-      if (err.code === 'ECONNREFUSED' && err.syscall === 'querySrv') {
-        console.log('\n💡 Troubleshooting Tips:');
-        console.log('   1. Check your internet connection');
-        console.log('   2. Verify MongoDB Atlas IP whitelist (add 0.0.0.0/0 for testing)');
-        console.log('   3. Try using NODE_OPTIONS="--dns-result-order=ipv4first" npm run dev');
-        console.log('   4. Check if your antivirus/firewall is blocking the connection');
-        console.log('   5. Verify your MongoDB credentials in .env file\n');
-      }
-
       if (retries === maxRetries) {
-        console.error('❌ Failed to connect to MongoDB after maximum retries');
-        process.exit(1);
+        console.error('❌ Failed to connect to MongoDB after maximum retries. Server will start anyway and retry in background.');
+        // Schedule background reconnection instead of crashing
+        scheduleReconnect();
       }
-
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, 3000));
     }
   }
 };
+
+// Background reconnection
+const scheduleReconnect = () => {
+  if (isReconnecting) return;
+  isReconnecting = true;
+  const retryInterval = 30000; // 30 seconds
+  console.log(`🔄 Will retry MongoDB connection every ${retryInterval / 1000}s in background...`);
+
+  const interval = setInterval(async () => {
+    try {
+      if (mongoose.connection.readyState === 1) {
+        clearInterval(interval);
+        isReconnecting = false;
+        return;
+      }
+      console.log('🔄 Background reconnection attempt...');
+      await mongoose.connect(process.env.MONGODB_URI, mongooseOptions);
+      console.log('✅ MongoDB reconnected successfully!');
+      clearInterval(interval);
+      isReconnecting = false;
+    } catch (err) {
+      console.error('⚠️ Background reconnection failed:', err.message);
+    }
+  }, retryInterval);
+};
+
+// Mongoose connection event listeners
+mongoose.connection.on('disconnected', () => {
+  console.error('⚠️ MongoDB disconnected');
+  scheduleReconnect();
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('⚠️ MongoDB connection error:', err.message);
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected');
+  isReconnecting = false;
+});
 
 connectDB();
 
@@ -127,11 +171,14 @@ app.use('/api/', generalLimiter);
 // Public routes (no authentication required)
 app.use('/api/auth', require('./routes/authRoutes'));
 
-// Health Check (public)
+// Health Check (public - no DB check so it always responds)
 app.get('/api/health', (req, res) => {
+  const dbStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
   res.json({
-    status: 'ok',
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    status: mongoose.connection.readyState === 1 ? 'ok' : 'degraded',
+    mongodb: dbStates[mongoose.connection.readyState] || 'unknown',
+    mongodbState: mongoose.connection.readyState,
+    uptime: process.uptime(),
     timestamp: new Date(),
     routes: {
       auth: '/api/auth',
@@ -155,17 +202,17 @@ app.use('/api/notifications', notificationRoutes);
 
 // GOSI API integration removed - using simple database system now
 
-// Protected routes (authentication required)
-app.use('/api/vehicles', authenticate, require('./routes/vehicleRoutes'));
-app.use('/api/home-rents', authenticate, require('./routes/homeRentRoutes'));
-app.use('/api/electricity', authenticate, require('./routes/electricityRoutes'));
+// Protected routes (authentication required + DB health check)
+app.use('/api/vehicles', authenticate, dbHealthCheck, require('./routes/vehicleRoutes'));
+app.use('/api/home-rents', authenticate, dbHealthCheck, require('./routes/homeRentRoutes'));
+app.use('/api/electricity', authenticate, dbHealthCheck, require('./routes/electricityRoutes'));
 // Note: Notification routes are defined individually above (public and cron routes)
-app.use('/api/import', authenticate, authorize('admin', 'user'), require('./routes/importRoutes'));
-app.use('/api/absher', authenticate, require('./routes/absherRoutes'));
-app.use('/api/social-insurance', authenticate, require('./routes/socialInsuranceRoutes'));
-app.use('/api/insurance', authenticate, require('./routes/insuranceRoutes'));
-app.use('/api/mvpi', authenticate, require('./routes/mvpiRoutes'));
-app.use('/api/gosi', authenticate, require('./routes/gosiRoutes'));
+app.use('/api/import', authenticate, authorize('admin', 'user'), dbHealthCheck, require('./routes/importRoutes'));
+app.use('/api/absher', authenticate, dbHealthCheck, require('./routes/absherRoutes'));
+app.use('/api/social-insurance', authenticate, dbHealthCheck, require('./routes/socialInsuranceRoutes'));
+app.use('/api/insurance', authenticate, dbHealthCheck, require('./routes/insuranceRoutes'));
+app.use('/api/mvpi', authenticate, dbHealthCheck, require('./routes/mvpiRoutes'));
+app.use('/api/gosi', authenticate, dbHealthCheck, require('./routes/gosiRoutes'));
 
 // Use centralized error handler
 app.use(errorHandler);

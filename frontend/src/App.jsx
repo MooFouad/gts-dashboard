@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ConnectionBanner from './components/common/ConnectionBanner';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import StatusLegend from './components/common/StatusLegend';
@@ -123,6 +124,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
+      <ConnectionBanner />
       <Header
         sidebarCollapsed={sidebarCollapsed}
         sidebarOpen={sidebarOpen}

@@ -12,7 +12,8 @@
     "backup:mongoose": "node scripts/backupDatabase.js --mongoose",
     "backup:list": "node scripts/backupDatabase.js --list",
     "restore": "node scripts/restoreDatabase.js",
-    "restore:backup": "node scripts/restoreDatabase.js"
+    "restore:backup": "node scripts/restoreDatabase.js",
+    "backup:scheduled": "node scripts/scheduledBackup.js"
   },
   "keywords": [
     "gts",

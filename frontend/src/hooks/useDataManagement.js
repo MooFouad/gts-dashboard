@@ -7,6 +7,7 @@ export const useDataManagement = (type, options = {}) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isStale, setIsStale] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,6 +38,7 @@ export const useDataManagement = (type, options = {}) => {
     try {
       setLoading(true);
       setError(null);
+      setIsStale(false);
       const endpoint = getEndpoint(type);
 
       // Build query params for pagination and search
@@ -71,9 +73,18 @@ export const useDataManagement = (type, options = {}) => {
     } catch (err) {
       console.error(`Error fetching ${type}:`, err);
       setError(err.message);
-      setData([]);
-      setTotalItems(0);
-      setTotalPages(0);
+      // Preserve existing data on network/server errors instead of clearing
+      const isNetworkError = err.message.includes('Unable to reach') ||
+        err.message.includes('temporarily unavailable') ||
+        err.message.includes('taking too long') ||
+        err.message.includes('Failed after');
+      if (isNetworkError && data.length > 0) {
+        setIsStale(true); // Keep existing data but mark as stale
+      } else {
+        setData([]);
+        setTotalItems(0);
+        setTotalPages(0);
+      }
     } finally {
       setLoading(false);
     }
@@ -187,10 +198,22 @@ export const useDataManagement = (type, options = {}) => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus]);
 
+  // Auto-retry fetch when connection is restored
+  useEffect(() => {
+    const handleConnectionRestored = (event) => {
+      if (event.detail.online && isStale) {
+        fetchData();
+      }
+    };
+    window.addEventListener('api:connection-status', handleConnectionRestored);
+    return () => window.removeEventListener('api:connection-status', handleConnectionRestored);
+  }, [isStale, fetchData]);
+
   return {
     data,
     loading,
     error,
+    isStale,
     addItem,
     updateItem,
     deleteItem,

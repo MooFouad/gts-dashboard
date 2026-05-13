@@ -9,9 +9,33 @@ const getAuthToken = () => {
   return localStorage.getItem('token');
 };
 
+// User-friendly error messages
+const getUserMessage = (error, response) => {
+  if (error.name === 'AbortError') {
+    return 'The server is taking too long to respond. Please try again.';
+  }
+  if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+    return 'Unable to reach the server. Please check your internet connection.';
+  }
+  if (response?.status === 503) {
+    return 'The service is temporarily unavailable. Please try again in a moment.';
+  }
+  if (response?.status === 502 || response?.status === 504) {
+    return 'The server is temporarily unavailable. Please try again in a moment.';
+  }
+  return null; // Use the original error message
+};
+
 class ApiService {
   constructor(baseURL) {
     this.baseURL = baseURL;
+    this.consecutiveFailures = 0;
+  }
+
+  _notifyConnectionStatus(online) {
+    window.dispatchEvent(new CustomEvent('api:connection-status', {
+      detail: { online }
+    }));
   }
 
   async request(endpoint, options = {}, retryCount = 0) {
@@ -43,14 +67,30 @@ class ApiService {
         // Handle 401 Unauthorized
         if (response.status === 401) {
           localStorage.removeItem('token');
-          // Trigger a custom event that AuthContext can listen to
           window.dispatchEvent(new CustomEvent('auth:unauthorized'));
           throw new Error('Session expired. Please login again.');
         }
 
+        // Handle 503 DB unavailable - don't retry, DB is down
+        if (response.status === 503) {
+          const errorData = await response.json().catch(() => ({}));
+          if (errorData.code === 'DB_UNAVAILABLE') {
+            this.consecutiveFailures++;
+            this._notifyConnectionStatus(false);
+            throw new Error('The service is temporarily unavailable. Please try again in a moment.');
+          }
+        }
+
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+          const friendlyMessage = getUserMessage(null, response);
+          throw new Error(friendlyMessage || errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        // Success - reset failure counter
+        if (this.consecutiveFailures > 0) {
+          this.consecutiveFailures = 0;
+          this._notifyConnectionStatus(true);
         }
 
         const data = await response.json();
@@ -60,26 +100,34 @@ class ApiService {
         throw fetchError;
       }
     } catch (error) {
-      console.error(`API Error (attempt ${retryCount + 1}/${MAX_RETRIES}):`, error);
-
-      if (error.name === 'AbortError') {
-        const timeoutSec = (options.timeout || DEFAULT_TIMEOUT) / 1000;
-        console.error(`Request timed out after ${timeoutSec} seconds`);
-        throw new Error(`Request timed out after ${timeoutSec} seconds`);
-      }
-
-      // Don't retry on 401 errors
-      if (error.message.includes('Session expired')) {
+      // Don't retry on auth or client errors
+      if (error.message.includes('Session expired') || error.message.includes('HTTP error! status: 4')) {
         throw error;
       }
 
+      // Don't retry on DB unavailable (503) - the backend is up but DB is down
+      if (error.message.includes('temporarily unavailable')) {
+        throw error;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = RETRY_DELAY * Math.pow(2, retryCount);
+
       if (retryCount < MAX_RETRIES - 1) {
-        console.log(`Retrying in ${RETRY_DELAY}ms...`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        console.log(`API retry ${retryCount + 1}/${MAX_RETRIES} in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
         return this.request(endpoint, options, retryCount + 1);
       }
 
-      throw new Error(`Failed after ${MAX_RETRIES} attempts: ${error.message}`);
+      // All retries exhausted
+      this.consecutiveFailures++;
+      if (this.consecutiveFailures >= 2) {
+        this._notifyConnectionStatus(false);
+      }
+
+      // Return user-friendly message
+      const friendlyMessage = getUserMessage(error);
+      throw new Error(friendlyMessage || `Failed after ${MAX_RETRIES} attempts: ${error.message}`);
     }
   }
 
