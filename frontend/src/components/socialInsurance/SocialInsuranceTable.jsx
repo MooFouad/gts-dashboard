@@ -9,108 +9,88 @@ const SocialInsuranceTable = ({ data, onEdit, onDelete }) => {
     return date.toLocaleDateString('en-GB');
   };
 
-  const getRemainingDaysColor = (days) => {
-    if (days < 0) return 'text-red-600 font-bold';
-    if (days <= 30) return 'text-orange-600 font-bold';
-    if (days <= 90) return 'text-yellow-600';
-    return 'text-green-600';
+  const getDaysDisplay = (days) => {
+    if (days === null || typeof days === 'undefined') return <span className="text-slate-400">-</span>;
+    if (days < 0) return <span className="badge-danger">Expired {Math.abs(days)}d ago</span>;
+    if (days === 0) return <span className="badge-warning">Expires today</span>;
+    if (days <= 30) return <span className="badge-warning">{days} days</span>;
+    if (days <= 90) return <span className="text-amber-600 font-medium">{days} days</span>;
+    return <span className="text-emerald-600 font-medium">{days} days</span>;
   };
 
   const getStatusBadge = (status) => {
-    const statusColors = {
-      'active': 'bg-green-100 text-green-800',
-      'expiring-soon': 'bg-yellow-100 text-yellow-800',
-      'expired': 'bg-red-100 text-red-800'
-    };
-
-    return (
-      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status || 'N/A'}
-      </span>
-    );
+    switch (status) {
+      case 'active':
+        return <span className="badge-success"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Active</span>;
+      case 'expiring-soon':
+        return <span className="badge-warning"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Expiring Soon</span>;
+      case 'expired':
+        return <span className="badge-danger"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Expired</span>;
+      default:
+        return <span className="badge-neutral">{status || 'N/A'}</span>;
+    }
   };
 
   return (
     <ScrollableTableWrapper>
-      <table className="min-w-full bg-white border border-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Name
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              ID Number
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Division
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Start Date
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              End Date
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Remaining Days
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Status
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {data.length === 0 ? (
+      <div className="table-wrapper">
+        <table className="min-w-full">
+          <thead className="table-header">
             <tr>
-              <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
-                No social insurance records found. Click "Add New" to create one.
-              </td>
+              <th className="table-cell text-left">Name</th>
+              <th className="table-cell text-left">ID Number</th>
+              <th className="table-cell text-left">Division</th>
+              <th className="table-cell text-left">Start Date</th>
+              <th className="table-cell text-left">End Date</th>
+              <th className="table-cell text-left">Remaining</th>
+              <th className="table-cell text-left">Status</th>
+              <th className="table-cell text-center">Actions</th>
             </tr>
-          ) : (
-            data.map((record) => {
-              return (
-                <tr key={record._id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+          </thead>
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan="8" className="px-4 py-12 text-center">
+                  <div className="text-slate-400 text-sm">No social insurance records found</div>
+                  <div className="text-slate-400 text-xs mt-1">Click "Add New" to create one</div>
+                </td>
+              </tr>
+            ) : (
+              data.map((record) => (
+                <tr key={record._id} className="table-row">
+                  <td className="table-cell whitespace-nowrap font-medium text-slate-800">
                     {record.name || '-'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
+                  <td className="table-cell whitespace-nowrap text-slate-500">
                     {record.nin || '-'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
+                  <td className="table-cell whitespace-nowrap">
                     {record.division || '-'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
+                  <td className="table-cell whitespace-nowrap text-slate-500">
                     {formatDate(record.startDate)}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
+                  <td className="table-cell whitespace-nowrap">
                     {formatDate(record.endDate)}
                   </td>
-                  <td className={`px-4 py-3 whitespace-nowrap text-sm ${getRemainingDaysColor(record.remainingDays)}`}>
-                    {record.remainingDays !== null && record.remainingDays !== undefined
-                      ? record.remainingDays > 0
-                        ? `${record.remainingDays} days`
-                        : record.remainingDays === 0
-                        ? 'Expires today'
-                        : `Expired ${Math.abs(record.remainingDays)} days ago`
-                      : '-'}
+                  <td className="table-cell whitespace-nowrap">
+                    {getDaysDisplay(record.remainingDays)}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="table-cell whitespace-nowrap">
                     {getStatusBadge(record.status)}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
+                  <td className="table-cell whitespace-nowrap text-center">
                     <ActionButtons
                       onEdit={() => onEdit(record)}
                       onDelete={() => onDelete(record._id)}
                     />
                   </td>
                 </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </ScrollableTableWrapper>
   );
 };

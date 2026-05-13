@@ -19,12 +19,10 @@ const HomeRentsContainer = () => {
   const { data: items, addItem, updateItem, deleteItem, loading, error, refreshData, pagination } = useDataManagement('homeRent');
 
   const filteredItems = items.filter((item) => {
-    // Search filter
     const matchSearch = Object.values(item).some((val) =>
       String(val).toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Status filter
     let matchStatus = true;
     if (filterStatus !== 'all') {
       const isContractExpired = new Date(item.contractEndingDate) < new Date();
@@ -40,7 +38,7 @@ const HomeRentsContainer = () => {
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
         return paymentDate >= now && paymentDate <= thirtyDaysFromNow;
       });
-      
+
       if (filterStatus === 'expired') {
         matchStatus = isContractExpired;
       } else if (filterStatus === 'warning') {
@@ -64,7 +62,6 @@ const HomeRentsContainer = () => {
   const handleSubmit = async (formData) => {
     try {
       if (formDialog.data) {
-        console.log('Updating home rent with data:', formDialog.data);
         await updateItem(formDialog.data._id, {
           ...formData,
           _id: formDialog.data._id
@@ -73,7 +70,6 @@ const HomeRentsContainer = () => {
         await addItem(formData);
       }
       setFormDialog({ isOpen: false, data: null });
-      // Refresh data to ensure UI is updated
       await refreshData();
     } catch (err) {
       console.error('Form submission error:', err);
@@ -82,7 +78,6 @@ const HomeRentsContainer = () => {
   };
 
   const handleDelete = (id) => {
-    console.log('Initiating delete for:', id);
     setDeleteDialog({ isOpen: true, id });
   };
 
@@ -91,7 +86,6 @@ const HomeRentsContainer = () => {
       try {
         await deleteItem(deleteDialog.id);
         setDeleteDialog({ isOpen: false, id: null });
-        // Refresh data to ensure UI is updated
         await refreshData();
       } catch (error) {
         console.error('Delete failed:', error);
@@ -112,36 +106,40 @@ const HomeRentsContainer = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-navy-200 border-t-navy-600"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-red-600 p-4 border border-red-200 rounded">
-        Error: {error}
+      <div className="card p-6 text-center">
+        <div className="text-rose-600 font-medium mb-2">Error Loading Data</div>
+        <p className="text-slate-500 text-sm mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="btn-primary !text-sm">
+          Retry
+        </button>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-        <h2 className="text-xl font-semibold">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <h2 className="text-lg font-semibold text-slate-800">
           Home Rentals
+          <span className="ml-2 badge-neutral">{items.length}</span>
         </h2>
         <div className="flex flex-wrap gap-2">
-          <ExportButton onClick={handleExport} label="Export Home Rentals" />
-          <button
-            onClick={handleCreate}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
+          <ExportButton onClick={handleExport} label="Export" />
+          <button onClick={handleCreate} className="btn-primary !text-sm">
             Add Home Rental
           </button>
         </div>
       </div>
 
+      {/* Toolbar */}
       <Toolbar
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}

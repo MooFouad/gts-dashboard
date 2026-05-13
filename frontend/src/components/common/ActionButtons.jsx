@@ -5,10 +5,9 @@ import AttachmentsDialog from './AttachmentsDialog';
 const ActionButtons = ({ onEdit, onDelete, attachments = [] }) => {
   const [showAttachments, setShowAttachments] = useState(false);
 
-  // If both onEdit and onDelete are null, show read-only message
   if (!onEdit && !onDelete) {
     return (
-      <div className="text-xs text-gray-400 italic">
+      <div className="text-xs text-slate-400 italic">
         Read Only
       </div>
     );
@@ -16,34 +15,34 @@ const ActionButtons = ({ onEdit, onDelete, attachments = [] }) => {
 
   return (
     <>
-      <div className="flex gap-1 sm:gap-2">
+      <div className="flex gap-0.5">
         {onEdit && (
           <button
             onClick={onEdit}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
+            className="btn-icon !p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50"
             title="Edit"
           >
-            <Edit2 size={18} />
+            <Edit2 size={15} />
           </button>
         )}
         <button
           onClick={() => setShowAttachments(true)}
-          className={`p-2 rounded transition ${
+          className={`btn-icon !p-1.5 ${
             attachments?.length > 0
-              ? 'text-green-600 hover:bg-green-50'
-              : 'text-gray-400 hover:bg-gray-50'
+              ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50'
+              : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50'
           }`}
           title={`Attachments (${attachments?.length || 0})`}
         >
-          <Paperclip size={18} />
+          <Paperclip size={15} />
         </button>
         {onDelete && (
           <button
             onClick={onDelete}
-            className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+            className="btn-icon !p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
             title="Delete"
           >
-            <Trash2 size={18} />
+            <Trash2 size={15} />
           </button>
         )}
       </div>

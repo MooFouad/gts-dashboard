@@ -10,26 +10,21 @@ const Pagination = ({
   onPageSizeChange,
   pageSizeOptions = [10, 25, 50, 100]
 }) => {
-  // Calculate the range of items being displayed
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
-  // Generate page numbers to display
   const getPageNumbers = () => {
     const pages = [];
     const maxPagesToShow = 5;
 
     if (totalPages <= maxPagesToShow) {
-      // Show all pages if total is small
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Show current page, 2 before, 2 after
       let startPage = Math.max(1, currentPage - 2);
       let endPage = Math.min(totalPages, currentPage + 2);
 
-      // Adjust if we're near the start or end
       if (currentPage <= 3) {
         endPage = maxPagesToShow;
       } else if (currentPage >= totalPages - 2) {
@@ -40,75 +35,66 @@ const Pagination = ({
         pages.push(i);
       }
     }
-
     return pages;
   };
 
   const pageNumbers = getPageNumbers();
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-white border-t border-gray-200">
-      {/* Items info and page size selector */}
-      <div className="flex items-center gap-4 text-sm text-gray-700">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-white border-t border-slate-100">
+      {/* Items info */}
+      <div className="flex items-center gap-4 text-xs text-slate-500">
         <div>
-          Showing <span className="font-medium">{startItem}</span> to{' '}
-          <span className="font-medium">{endItem}</span> of{' '}
-          <span className="font-medium">{totalItems}</span> results
+          Showing <span className="font-medium text-slate-700">{startItem}</span> to{' '}
+          <span className="font-medium text-slate-700">{endItem}</span> of{' '}
+          <span className="font-medium text-slate-700">{totalItems}</span>
         </div>
 
         {onPageSizeChange && (
-          <div className="flex items-center gap-2">
-            <label htmlFor="pageSize" className="text-sm text-gray-600">
-              Per page:
-            </label>
+          <div className="flex items-center gap-1.5">
+            <span>Per page:</span>
             <select
-              id="pageSize"
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="input-field !w-16 !py-1 !px-2 !text-xs"
             >
               {pageSizeOptions.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
+                <option key={size} value={size}>{size}</option>
               ))}
             </select>
           </div>
         )}
       </div>
 
-      {/* Pagination controls */}
-      <div className="flex items-center gap-2">
-        {/* First page */}
+      {/* Page controls */}
+      <div className="flex items-center gap-1">
         <button
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
-          className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed"
           title="First page"
         >
-          <ChevronsLeft size={18} />
+          <ChevronsLeft size={16} />
         </button>
 
-        {/* Previous page */}
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed"
           title="Previous page"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={16} />
         </button>
 
-        {/* Page numbers */}
-        <div className="flex gap-1">
+        <div className="flex gap-0.5 mx-1">
           {pageNumbers.map((pageNum) => (
             <button
               key={pageNum}
               onClick={() => onPageChange(pageNum)}
-              className={`px-3 py-1 rounded text-sm font-medium ${
+              className={`min-w-[32px] h-8 rounded-lg text-xs font-medium transition-colors ${
                 pageNum === currentPage
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  ? 'bg-navy-800 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
               {pageNum}
@@ -116,24 +102,22 @@ const Pagination = ({
           ))}
         </div>
 
-        {/* Next page */}
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed"
           title="Next page"
         >
-          <ChevronRight size={18} />
+          <ChevronRight size={16} />
         </button>
 
-        {/* Last page */}
         <button
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
-          className="p-2 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-icon disabled:opacity-30 disabled:cursor-not-allowed"
           title="Last page"
         >
-          <ChevronsRight size={18} />
+          <ChevronsRight size={16} />
         </button>
       </div>
     </div>

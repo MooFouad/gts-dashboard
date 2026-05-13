@@ -49,7 +49,7 @@ const SocialInsuranceForm = ({ onSubmit, onCancel, initialData = null }) => {
         <FormField label="Employee Name">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
             placeholder="Enter employee name"
@@ -60,7 +60,7 @@ const SocialInsuranceForm = ({ onSubmit, onCancel, initialData = null }) => {
         <FormField label="ID Number (NIN/Iqama)">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.nin}
             onChange={(e) => handleChange('nin', e.target.value)}
             placeholder="e.g., 1234567890"
@@ -71,7 +71,7 @@ const SocialInsuranceForm = ({ onSubmit, onCancel, initialData = null }) => {
         <FormField label="Division/Department">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.division}
             onChange={(e) => handleChange('division', e.target.value)}
             placeholder="e.g., IT Department"
@@ -82,7 +82,7 @@ const SocialInsuranceForm = ({ onSubmit, onCancel, initialData = null }) => {
         <FormField label="Start Date">
           <input
             type="date"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.startDate}
             onChange={(e) => handleChange('startDate', e.target.value)}
           />
@@ -92,7 +92,7 @@ const SocialInsuranceForm = ({ onSubmit, onCancel, initialData = null }) => {
         <FormField label="End Date">
           <input
             type="date"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.endDate}
             onChange={(e) => handleChange('endDate', e.target.value)}
           />
@@ -102,7 +102,7 @@ const SocialInsuranceForm = ({ onSubmit, onCancel, initialData = null }) => {
       {/* Notes - Full width */}
       <FormField label="Notes (Optional)">
         <textarea
-          className="w-full border rounded px-3 py-2"
+          className="input-field"
           value={formData.notes}
           onChange={(e) => handleChange('notes', e.target.value)}
           placeholder="Additional notes..."

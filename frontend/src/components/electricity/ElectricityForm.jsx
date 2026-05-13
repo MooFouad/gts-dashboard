@@ -75,20 +75,20 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="No.">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
+            className="input-field !bg-slate-100 cursor-not-allowed"
             value={formData.no}
             onChange={(e) => handleChange('no', e.target.value)}
             readOnly
             disabled
             title="Auto-generated based on total count"
           />
-          <p className="text-xs text-gray-500 mt-1">Auto-generated</p>
+          <p className="text-xs text-slate-400 mt-1">Auto-generated</p>
         </FormField>
 
         <FormField label="Account">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.account}
             onChange={(e) => handleChange('account', e.target.value)}
           />
@@ -97,7 +97,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="Name">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
           />
@@ -106,7 +106,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="City">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.city}
             onChange={(e) => handleChange('city', e.target.value)}
           />
@@ -115,7 +115,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="Address">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.address}
             onChange={(e) => handleChange('address', e.target.value)}
           />
@@ -124,7 +124,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="Project">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.project}
             onChange={(e) => handleChange('project', e.target.value)}
           />
@@ -133,7 +133,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="Division">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.division}
             onChange={(e) => handleChange('division', e.target.value)}
           />
@@ -142,7 +142,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="Meter Number">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.meterNumber}
             onChange={(e) => handleChange('meterNumber', e.target.value)}
           />
@@ -151,7 +151,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="Bill Date">
           <input
             type="date"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.date}
             onChange={(e) => handleChange('date', e.target.value)}
           />
@@ -160,7 +160,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="Due Date">
           <input
             type="date"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.dueDate}
             onChange={(e) => handleChange('dueDate', e.target.value)}
           />
@@ -169,7 +169,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="Previous Reading">
           <input
             type="number"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.previousReading}
             onChange={(e) => handleChange('previousReading', e.target.value)}
             min="0"
@@ -180,7 +180,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="Current Reading">
           <input
             type="number"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.currentReading}
             onChange={(e) => handleChange('currentReading', e.target.value)}
             min="0"
@@ -191,19 +191,19 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         <FormField label="Consumption (kWh)">
           <input
             type="number"
-            className="w-full border rounded px-3 py-2 bg-gray-100"
+            className="input-field !bg-slate-100"
             value={formData.consumption}
             readOnly
             disabled
             title="Auto-calculated from readings"
           />
-          <p className="text-xs text-gray-500 mt-1">Auto-calculated</p>
+          <p className="text-xs text-slate-400 mt-1">Auto-calculated</p>
         </FormField>
 
         <FormField label="Alert Threshold (kWh)">
           <input
             type="number"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.alertThreshold}
             onChange={(e) => handleChange('alertThreshold', e.target.value)}
             min="0"

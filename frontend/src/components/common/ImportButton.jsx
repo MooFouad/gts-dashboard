@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { FileUp } from 'lucide-react';
 
-const ImportButton = ({ onImport, label = "Import Excel", accept = ".xlsx,.xls" }) => {
+const ImportButton = ({ onImport, label = "Import", accept = ".xlsx,.xls" }) => {
   const fileInputRef = useRef(null);
 
   const handleClick = () => {
@@ -12,7 +12,6 @@ const ImportButton = ({ onImport, label = "Import Excel", accept = ".xlsx,.xls" 
     const file = event.target.files?.[0];
     if (file) {
       await onImport(file);
-      // Reset the input so the same file can be selected again
       event.target.value = '';
     }
   };
@@ -28,9 +27,9 @@ const ImportButton = ({ onImport, label = "Import Excel", accept = ".xlsx,.xls" 
       />
       <button
         onClick={handleClick}
-        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+        className="btn-outline !text-xs"
       >
-        <FileUp size={20} />
+        <FileUp size={15} />
         {label}
       </button>
     </>

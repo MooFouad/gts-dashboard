@@ -17,12 +17,10 @@ const ElectricityContainer = () => {
   const { data: items, addItem, updateItem, deleteItem, loading, error, refreshData, pagination } = useDataManagement('electricity');
 
   const filteredItems = items.filter((item) => {
-    // Search filter
     const matchSearch = Object.values(item).some((val) =>
       String(val).toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Status filter
     let matchStatus = true;
     if (filterStatus !== 'all' && item.dueDate) {
       const today = new Date();
@@ -41,7 +39,6 @@ const ElectricityContainer = () => {
         matchStatus = dueDate > tenDaysFromNow;
       }
     } else if (filterStatus !== 'all' && !item.dueDate) {
-      // If no dueDate is set, don't filter by status
       matchStatus = false;
     }
 
@@ -49,7 +46,6 @@ const ElectricityContainer = () => {
   });
 
   const handleCreate = () => {
-    // Calculate next number based on array length
     const nextNo = items.length + 1;
     setFormDialog({ isOpen: true, data: null, nextNo });
   };
@@ -61,9 +57,6 @@ const ElectricityContainer = () => {
   const handleSubmit = async (formData) => {
     try {
       if (formDialog.data) {
-        console.log('Updating item with ID:', formDialog.data._id);
-        console.log('Update data:', formData);
-
         await updateItem(formDialog.data._id, {
           ...formData,
           _id: formDialog.data._id
@@ -72,7 +65,6 @@ const ElectricityContainer = () => {
         await addItem(formData);
       }
       setFormDialog({ isOpen: false, data: null });
-      // Refresh data to ensure UI is updated
       await refreshData();
     } catch (err) {
       console.error('Form submission error:', err);
@@ -88,7 +80,6 @@ const ElectricityContainer = () => {
     if (deleteDialog.id !== null) {
       await deleteItem(deleteDialog.id);
       setDeleteDialog({ isOpen: false, id: null });
-      // Refresh data to ensure UI is updated
       await refreshData();
     }
   };
@@ -105,20 +96,17 @@ const ElectricityContainer = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-navy-200 border-t-navy-600"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-red-600 p-6 border border-red-200 rounded bg-red-50">
-        <h3 className="text-lg font-semibold mb-2">Error Loading Data</h3>
-        <p className="mb-4">{error}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-        >
+      <div className="card p-6 text-center">
+        <div className="text-rose-600 font-medium mb-2">Error Loading Data</div>
+        <p className="text-slate-500 text-sm mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="btn-primary !text-sm">
           Retry
         </button>
       </div>
@@ -127,21 +115,21 @@ const ElectricityContainer = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-        <h2 className="text-xl font-semibold">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <h2 className="text-lg font-semibold text-slate-800">
           Electricity Bills
+          <span className="ml-2 badge-neutral">{items.length}</span>
         </h2>
         <div className="flex flex-wrap gap-2">
-          <ExportButton onClick={handleExport} label="Export Electricity Bills" />
-          <button
-            onClick={handleCreate}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
+          <ExportButton onClick={handleExport} label="Export" />
+          <button onClick={handleCreate} className="btn-primary !text-sm">
             Add Electricity Bill
           </button>
         </div>
       </div>
 
+      {/* Toolbar */}
       <Toolbar
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}

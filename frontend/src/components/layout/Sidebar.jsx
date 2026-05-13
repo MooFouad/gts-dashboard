@@ -1,5 +1,5 @@
 import React from 'react';
-import { Car, Home, Zap, Shield, Settings, Info, X, Menu, User, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Car, Home, Zap, Shield, X, User, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Sidebar = ({
@@ -15,8 +15,6 @@ const Sidebar = ({
   mvpiCount,
   isOpen,
   onToggle,
-  onSettingsClick,
-  onDiagnosticsClick,
   isCollapsed,
   onToggleCollapse
 }) => {
@@ -27,10 +25,10 @@ const Sidebar = ({
       await logout();
     }
   };
+
   const handleTabChange = (tab) => {
     if (tab !== activeTab) {
       onTabChange(tab);
-      // Close sidebar on mobile after selection
       if (window.innerWidth < 768) {
         onToggle();
       }
@@ -38,169 +36,138 @@ const Sidebar = ({
   };
 
   const navItems = [
-    {
-      id: 'absher',
-      label: 'Tamm - Istemarah',
-      icon: Car,
-      count: absherCount
-    },
-    {
-      id: 'homeRents',
-      label: 'Home Rents',
-      icon: Home,
-      count: homeRentsCount
-    },
-    {
-      id: 'electricity',
-      label: 'Electricity',
-      icon: Zap,
-      count: electricityCount
-    },
-    {
-      id: 'socialInsurance',
-      label: 'Social Insurance',
-      icon: Shield,
-      count: socialInsuranceCount
-    },
-    {
-      id: 'gosi',
-      label: 'GOSI',
-      icon: null, // Will use image instead
-      count: gosiCount,
-      useImage: true
-    }
+    { id: 'absher', label: 'Tamm - Istemarah', icon: Car, count: absherCount },
+    { id: 'homeRents', label: 'Home Rents', icon: Home, count: homeRentsCount },
+    { id: 'electricity', label: 'Electricity', icon: Zap, count: electricityCount },
+    { id: 'socialInsurance', label: 'Social Insurance', icon: Shield, count: socialInsuranceCount },
+    { id: 'gosi', label: 'GOSI', icon: null, count: gosiCount, useImage: true },
   ];
-
-  const itemClasses = (tab) =>
-    `flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-      activeTab === tab
-        ? 'bg-blue-600 text-white shadow-md'
-        : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
-    }`;
 
   return (
     <>
-      {/* Desktop Collapse Toggle Button */}
-      <button
-        onClick={onToggleCollapse}
-        className="hidden md:block fixed top-24 z-50 p-2 bg-blue-600 text-white rounded-r-lg shadow-lg hover:bg-blue-700 transition"
-        style={{ left: isCollapsed ? '0px' : '256px' }}
-        title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-      </button>
-
-      {/* Overlay for mobile */}
+      {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-30 animate-fade-in"
           onClick={onToggle}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white shadow-xl z-40 transition-transform duration-300 ease-in-out flex flex-col w-64
+        className={`fixed top-0 left-0 h-full bg-navy-900 shadow-xl z-40 flex flex-col
+          transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          ${isCollapsed ? 'md:-translate-x-full' : 'md:translate-x-0'}`}
+          md:translate-x-0
+          ${isCollapsed ? 'md:w-[68px]' : 'md:w-64'}
+          w-64`}
       >
         {/* Sidebar Header */}
-        <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-blue-700">
+        <div className={`border-b border-navy-800 ${isCollapsed ? 'md:p-2 md:py-4' : 'p-4'}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img
-                src="/logo.svg"
-                alt="GTS logo"
-                className="h-10 w-10 object-contain bg-white rounded-lg p-1"
-              />
-              <div className="text-white">
-                <h2 className="font-bold text-lg">GTS</h2>
-                <p className="text-xs text-blue-100">Management</p>
+            <div className={`flex items-center gap-3 ${isCollapsed ? 'md:justify-center md:w-full' : ''}`}>
+              <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 bg-navy-800 rounded-lg">
+                <img
+                  src="/logo.svg"
+                  alt="GTS logo"
+                  className="h-7 w-7 object-contain brightness-0 invert"
+                />
+              </div>
+              <div className={isCollapsed ? 'md:hidden' : ''}>
+                <h2 className="font-bold text-base text-white">GTS</h2>
+                <p className="text-xs text-navy-400">Management System</p>
               </div>
             </div>
             <button
               onClick={onToggle}
-              className="md:hidden text-white hover:bg-blue-500 rounded p-1"
+              className="md:hidden text-navy-400 hover:text-white hover:bg-navy-800 rounded-lg p-1.5 transition-colors"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
 
+        {/* Navigation Label */}
+        <div className={`pt-5 pb-2 ${isCollapsed ? 'md:hidden' : 'px-4'}`}>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-navy-500 px-4 md:px-0">Navigation</p>
+        </div>
+        {isCollapsed && <div className="hidden md:block pt-3" />}
+
         {/* Navigation Items */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-          {navItems.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => handleTabChange(item.id)}
-              className={itemClasses(item.id)}
-            >
-              <div className="flex items-center gap-3">
-                {item.useImage ? (
-                  <img src="/gosi-logo.png" alt="GOSI" className="w-5 h-5" />
-                ) : (
-                  <item.icon size={20} />
-                )}
-                <span className="font-medium">{item.label}</span>
-              </div>
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                  activeTab === item.id
-                    ? 'bg-white text-blue-600'
-                    : 'bg-blue-100 text-blue-700'
-                }`}
+        <nav className="flex-1 overflow-y-auto px-2 space-y-1">
+          {navItems.map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <div
+                key={item.id}
+                onClick={() => handleTabChange(item.id)}
+                title={item.label}
+                className={`flex items-center px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150 group
+                  ${isCollapsed ? 'md:justify-center md:px-0' : 'justify-between'}
+                  ${isActive
+                    ? 'bg-blue-600/20 text-white border-l-[3px] border-blue-400'
+                    : 'text-navy-300 hover:bg-navy-800 hover:text-white border-l-[3px] border-transparent'
+                  }`}
               >
-                {item.count}
-              </span>
-            </div>
-          ))}
+                <div className={`flex items-center gap-3 ${isCollapsed ? 'md:gap-0' : ''}`}>
+                  {item.useImage ? (
+                    <img src="/gosi-logo.png" alt="GOSI" className="w-[18px] h-[18px] flex-shrink-0 opacity-80 group-hover:opacity-100" />
+                  ) : (
+                    <item.icon size={18} className={`flex-shrink-0 ${isActive ? 'text-blue-400' : ''}`} />
+                  )}
+                  <span className={`text-sm font-medium ${isCollapsed ? 'md:hidden' : ''}`}>{item.label}</span>
+                </div>
+                <span
+                  className={`min-w-[28px] text-center px-2 py-0.5 rounded-full text-[11px] font-semibold
+                    ${isCollapsed ? 'md:hidden' : ''}
+                    ${isActive
+                      ? 'bg-blue-500/30 text-blue-300'
+                      : 'bg-navy-800 text-navy-400 group-hover:bg-navy-700 group-hover:text-navy-300'
+                    }`}
+                >
+                  {item.count}
+                </span>
+              </div>
+            );
+          })}
         </nav>
 
-        {/* Bottom Actions */}
-        <div className="border-t bg-gray-50">
-          <div className="p-4 space-y-2">
+        {/* Bottom Section */}
+        <div className="border-t border-navy-800">
+          {/* Collapse Toggle - desktop only */}
+          <div className="hidden md:block px-2 pt-2">
             <button
-              onClick={() => {
-                onDiagnosticsClick();
-                if (window.innerWidth < 768) onToggle();
-              }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-200 rounded-lg transition"
-              title="Notification Diagnostics"
+              onClick={onToggleCollapse}
+              className={`w-full flex items-center gap-3 px-3 py-2 text-navy-400 hover:bg-navy-800 hover:text-navy-200 rounded-lg transition-colors
+                ${isCollapsed ? 'justify-center px-0' : ''}`}
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              <Info size={18} />
-              <span className="text-sm font-medium">Diagnostics</span>
-            </button>
-            <button
-              onClick={() => {
-                onSettingsClick();
-                if (window.innerWidth < 768) onToggle();
-              }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-200 rounded-lg transition"
-              title="Notification Settings"
-            >
-              <Settings size={18} />
-              <span className="text-sm font-medium">Settings</span>
+              {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+              <span className={`text-xs font-medium ${isCollapsed ? 'hidden' : ''}`}>
+                {isCollapsed ? 'Expand' : 'Collapse'}
+              </span>
             </button>
           </div>
 
           {/* User Profile & Logout */}
-          <div className="p-4 border-t bg-white">
-            <div className="flex items-center gap-3 mb-3 px-2">
-              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <User size={20} className="text-blue-600" />
+          <div className={`p-3 ${isCollapsed ? 'md:flex md:flex-col md:items-center md:gap-2' : ''}`}>
+            <div className={`flex items-center gap-3 mb-3 px-1 ${isCollapsed ? 'md:mb-0 md:px-0' : ''}`}>
+              <div className="flex-shrink-0 w-9 h-9 bg-navy-700 rounded-full flex items-center justify-center" title={user?.name || 'User'}>
+                <User size={16} className="text-navy-300" />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{user?.name || 'User'}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.role || 'Role'}</p>
+              <div className={`flex-1 min-w-0 ${isCollapsed ? 'md:hidden' : ''}`}>
+                <p className="text-sm font-medium text-navy-100 truncate">{user?.name || 'User'}</p>
+                <p className="text-[11px] text-navy-500 truncate capitalize">{user?.role || 'Role'}</p>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+              className={`flex items-center justify-center gap-2 border border-navy-700 text-navy-400 rounded-lg hover:bg-navy-800 hover:text-rose-400 hover:border-rose-900 transition-all text-xs font-medium
+                ${isCollapsed ? 'md:w-9 md:h-9 md:p-0 w-full px-3 py-2' : 'w-full px-3 py-2'}`}
               title="Logout"
             >
-              <LogOut size={18} />
-              <span>Logout</span>
+              <LogOut size={14} />
+              <span className={isCollapsed ? 'md:hidden' : ''}>Logout</span>
             </button>
           </div>
         </div>

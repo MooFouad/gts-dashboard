@@ -2,36 +2,23 @@ import React, { useState, useEffect } from 'react';
 import ConnectionBanner from './components/common/ConnectionBanner';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
-import StatusLegend from './components/common/StatusLegend';
 import HomeRentsContainer from './components/homeRents/HomeRentsContainer';
 import ElectricityContainer from './components/electricity/ElectricityContainer';
 import AbsherContainer from './components/absher/AbsherContainer';
 import SocialInsuranceContainer from './components/socialInsurance/SocialInsuranceContainer';
 import GOSIContainer from './components/gosi/GOSIContainer';
-// Commented out - No data available yet
-// import VehiclesContainer from './components/vehicles/VehiclesContainer';
-// import InsuranceContainer from './components/insurance/InsuranceContainer';
-// import MVPIContainer from './components/mvpi/MVPIContainer';
 import { vehicleService, homeRentService, electricityService, socialInsuranceService, absherService, gosiService } from './services';
-// import { insuranceService, mvpiService } from './services';
 
-// Lazy load notification components to prevent errors
+// Lazy load notification settings
 const NotificationSettings = React.lazy(() =>
   import('./components/common/NotificationSettings').catch(() => ({
     default: () => <div>Notification Settings Not Available</div>
   }))
 );
 
-const NotificationDiagnostics = React.lazy(() =>
-  import('./components/common/NotificationDiagnostics').catch(() => ({
-    default: () => <div>Diagnostics Not Available</div>
-  }))
-);
-
 const App = () => {
   const [activeTab, setActiveTab] = useState('absher');
   const [showSettings, setShowSettings] = useState(false);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [counts, setCounts] = useState({
@@ -46,10 +33,8 @@ const App = () => {
   });
 
   useEffect(() => {
-    // Fetch initial counts from API
     const fetchCounts = async () => {
       try {
-        // Use Promise.allSettled to handle individual failures gracefully
         const results = await Promise.allSettled([
           vehicleService.getCount(),
           homeRentService.getCount(),
@@ -57,12 +42,8 @@ const App = () => {
           absherService.getCount(),
           socialInsuranceService.getCount(),
           gosiService.getCount()
-          // insuranceService.getCount(),
-          // mvpiService.getCount()
         ]);
 
-        // Extract counts, defaulting to 0 if failed
-        // API service returns JSON directly (not wrapped like axios)
         const [vehiclesCount, homeRentsCount, electricityCount, absherCount, socialInsuranceCount, gosiCount] = results.map(
           result => result.status === 'fulfilled' ? result.value : { count: 0 }
         );
@@ -74,8 +55,8 @@ const App = () => {
           absher: absherCount.count || 0,
           socialInsurance: socialInsuranceCount.count || 0,
           gosi: gosiCount.count || 0,
-          insurance: 0, // insuranceCount.count,
-          mvpi: 0 // mvpiCount.count
+          insurance: 0,
+          mvpi: 0
         });
       } catch (error) {
         console.error('Error fetching counts:', error);
@@ -84,7 +65,6 @@ const App = () => {
 
     fetchCounts();
 
-    // Listen for count updates
     const handleCountUpdate = (event) => {
       const { type, count } = event.detail;
       setCounts(prevCounts => ({
@@ -94,10 +74,7 @@ const App = () => {
     };
 
     window.addEventListener('itemCountUpdate', handleCountUpdate);
-
-    return () => {
-      window.removeEventListener('itemCountUpdate', handleCountUpdate);
-    };
+    return () => window.removeEventListener('itemCountUpdate', handleCountUpdate);
   }, []);
 
   const handleTabChange = (tab) => {
@@ -106,12 +83,6 @@ const App = () => {
 
   const handleSettingsClick = () => {
     setShowSettings(!showSettings);
-    setShowDiagnostics(false);
-  };
-
-  const handleDiagnosticsClick = () => {
-    setShowDiagnostics(!showDiagnostics);
-    setShowSettings(false);
   };
 
   const toggleSidebar = () => {
@@ -123,16 +94,16 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <ConnectionBanner />
       <Header
         sidebarCollapsed={sidebarCollapsed}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={toggleSidebar}
+        onSettingsClick={handleSettingsClick}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar - Mobile & Desktop */}
         <Sidebar
           activeTab={activeTab}
           onTabChange={handleTabChange}
@@ -146,71 +117,61 @@ const App = () => {
           mvpiCount={counts.mvpi}
           isOpen={sidebarOpen}
           onToggle={toggleSidebar}
-          onSettingsClick={handleSettingsClick}
-          onDiagnosticsClick={handleDiagnosticsClick}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={toggleSidebarCollapse}
         />
 
         {/* Main Content Area */}
-        <main className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebarCollapsed ? '' : 'md:ml-64'}`}>
-          <StatusLegend />
-
-          {/* Notification Diagnostics Panel */}
-          {showDiagnostics && (
-            <div className="max-w-7xl mx-auto px-4 py-4">
-              <React.Suspense fallback={<div className="text-center py-4">Loading...</div>}>
-                <NotificationDiagnostics />
-              </React.Suspense>
-            </div>
-          )}
-
-          {/* Notification Settings Panel */}
-          {showSettings && (
-            <div className="max-w-7xl mx-auto px-4 py-4">
-              <React.Suspense fallback={<div className="text-center py-4">Loading...</div>}>
-                <NotificationSettings />
-              </React.Suspense>
-            </div>
-          )}
-
+        <main className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebarCollapsed ? 'md:ml-[68px]' : 'md:ml-64'}`}>
           <div className="p-2 sm:p-4">
-        {/* replaced by Tamm api data */}
-        {/* <div className={activeTab === 'vehicles' ? 'block' : 'hidden'}>
-          <VehiclesContainer />
-        </div> */}
+            <div className={activeTab === 'absher' ? 'block' : 'hidden'}>
+              <AbsherContainer />
+            </div>
 
-          <div className={activeTab === 'absher' ? 'block' : 'hidden'}>
-          <AbsherContainer />
-        </div>
+            <div className={activeTab === 'homeRents' ? 'block' : 'hidden'}>
+              <HomeRentsContainer />
+            </div>
 
-        {/* Commented out - No data available yet */}
-        {/* <div className={activeTab === 'insurance' ? 'block' : 'hidden'}>
-          <InsuranceContainer />
-        </div>
+            <div className={activeTab === 'electricity' ? 'block' : 'hidden'}>
+              <ElectricityContainer />
+            </div>
 
-        <div className={activeTab === 'mvpi' ? 'block' : 'hidden'}>
-          <MVPIContainer />
-        </div> */}
+            <div className={activeTab === 'socialInsurance' ? 'block' : 'hidden'}>
+              <SocialInsuranceContainer />
+            </div>
 
-        <div className={activeTab === 'homeRents' ? 'block' : 'hidden'}>
-          <HomeRentsContainer />
-        </div>
-
-        <div className={activeTab === 'electricity' ? 'block' : 'hidden'}>
-          <ElectricityContainer />
-        </div>
-
-        <div className={activeTab === 'socialInsurance' ? 'block' : 'hidden'}>
-          <SocialInsuranceContainer />
-        </div>
-
-        <div className={activeTab === 'gosi' ? 'block' : 'hidden'}>
-          <GOSIContainer />
-        </div>
+            <div className={activeTab === 'gosi' ? 'block' : 'hidden'}>
+              <GOSIContainer />
+            </div>
           </div>
         </main>
       </div>
+
+      {/* Notification Settings Popup */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start justify-center pt-20 p-4 animate-fade-in" onClick={() => setShowSettings(false)}>
+          <div className="bg-white rounded-xl shadow-modal w-full max-w-2xl max-h-[70vh] overflow-y-auto animate-slide-down" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 rounded-t-xl flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-800">Notification Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="btn-icon !p-1.5 text-slate-400 hover:text-slate-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <React.Suspense fallback={
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-navy-200 border-t-navy-600"></div>
+                </div>
+              }>
+                <NotificationSettings />
+              </React.Suspense>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,170 +5,126 @@ import ScrollableTableWrapper from '../common/ScrollableTableWrapper';
 
 const AbsherTable = ({ data, onEdit, onDelete }) => {
   const getEarliestExpiry = (record) => {
-    // Only registration expiry is available from Istemarah Renewal API
     const expiryDate = record.registrationExpiryDate || record.renewalExpiryDate;
-
     if (!expiryDate || expiryDate === 'N/A') return null;
-
     return new Date(expiryDate);
   };
 
-  // Format plateInfo from "ببأ_7562_1" to "ب ب أ 7562"
   const formatPlateInfo = (plateInfo) => {
     if (!plateInfo || plateInfo === '-') return '-';
-
-    // Split by underscores
     const parts = plateInfo.split('_');
-
-    // We only want the first two parts (letters and number, not the trailing type code)
     const lettersPart = parts[0] || '';
     const numberPart = parts[1] || '';
 
-    // Separate Arabic letters with spaces
     if (lettersPart && /[\u0600-\u06FF]/.test(lettersPart)) {
       const separated = lettersPart.split('').join(' ');
       return `${separated} ${numberPart}`;
     }
-
-    // If no Arabic letters, just join with space
     return `${lettersPart} ${numberPart}`;
+  };
+
+  const getDaysDisplay = (days) => {
+    if (days === null) return <span className="text-slate-400">-</span>;
+    if (days < 0) return <span className="badge-danger">Expired</span>;
+    if (days <= 30) return <span className="badge-warning">{days} days</span>;
+    return <span className="badge-success">{days} days</span>;
   };
 
   return (
     <ScrollableTableWrapper>
-      <table className="min-w-full bg-white border border-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Sequence Number
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Plate Info
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Plate Type
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Owner Name
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Owner ID Number
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Maker
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Model
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Model Year
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Major Color
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Created Date
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Renewal Expiry Date
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Actual Driver ID
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Actual Driver Name
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Operator ID
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Branch Name
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-              Days Until Expiry
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {data.length === 0 ? (
+      <div className="table-wrapper">
+        <table className="min-w-full">
+          <thead className="table-header">
             <tr>
-              <td colSpan="16" className="px-4 py-8 text-center text-gray-500">
-                No Absher records found
-              </td>
+              <th className="table-cell text-left">Seq #</th>
+              <th className="table-cell text-left">Plate Info</th>
+              <th className="table-cell text-left">Plate Type</th>
+              <th className="table-cell text-left">Owner</th>
+              <th className="table-cell text-left">Owner ID</th>
+              <th className="table-cell text-left">Maker</th>
+              <th className="table-cell text-left">Model</th>
+              <th className="table-cell text-left">Year</th>
+              <th className="table-cell text-left">Color</th>
+              <th className="table-cell text-left">Created</th>
+              <th className="table-cell text-left">Renewal Expiry</th>
+              <th className="table-cell text-left">Driver ID</th>
+              <th className="table-cell text-left">Driver Name</th>
+              <th className="table-cell text-left">Operator ID</th>
+              <th className="table-cell text-left">Branch</th>
+              <th className="table-cell text-left">Expiry Status</th>
             </tr>
-          ) : (
-            data.map((record, index) => {
-              const earliestExpiry = getEarliestExpiry(record);
-              const rowClass = getRowColorClass(record, 'absher');
-              const daysUntilExpiry = earliestExpiry ? calculateRemainingDays(earliestExpiry.toISOString().split('T')[0]) : null;
+          </thead>
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan="16" className="px-4 py-12 text-center">
+                  <div className="text-slate-400 text-sm">No Absher records found</div>
+                </td>
+              </tr>
+            ) : (
+              data.map((record, index) => {
+                const earliestExpiry = getEarliestExpiry(record);
+                const rowClass = getRowColorClass(record, 'absher');
+                const daysUntilExpiry = earliestExpiry ? calculateRemainingDays(earliestExpiry.toISOString().split('T')[0]) : null;
+                const uniqueKey = record._id || `${record.plateInfo || record.plateNumber}_${record.sequenceNumber}_${index}`;
 
-              // Create a unique key combining multiple fields to avoid duplicates
-              const uniqueKey = record._id || `${record.plateInfo || record.plateNumber}_${record.sequenceNumber}_${index}`;
-
-              return (
-                <tr key={uniqueKey} className={rowClass}>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.sequenceNumber || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {formatPlateInfo(record.plateInfo || record.plateNumber)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.plateType?.nameEn || record.plateTypeCode || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.ownerName || record.name || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.ownerIdNumber || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.maker || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.model || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.modelYear || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.majorColor || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {formatDate(record.createdDate)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {formatDate(record.renewalExpiryDate || record.registrationExpiryDate || record.expiryDate)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.actualDriverIdNumber || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.actualDriverName || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.operatorIdNumber || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {record.branchName?.en || record.branchName?.ar || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                    {daysUntilExpiry !== null ? (
-                      daysUntilExpiry < 0 ? (
-                        <span className="text-red-600">Expired</span>
-                      ) : (
-                        <span className={daysUntilExpiry <= 30 ? 'text-yellow-600' : 'text-green-600'}>
-                          {daysUntilExpiry} days
-                        </span>
-                      )
-                    ) : '-'}
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+                return (
+                  <tr key={uniqueKey} className={`table-row ${rowClass}`}>
+                    <td className="table-cell whitespace-nowrap font-medium text-slate-800">
+                      {record.sequenceNumber || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap font-medium text-slate-800" dir="rtl">
+                      {formatPlateInfo(record.plateInfo || record.plateNumber)}
+                    </td>
+                    <td className="table-cell whitespace-nowrap">
+                      {record.plateType?.nameEn || record.plateTypeCode || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap">
+                      {record.ownerName || record.name || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap text-slate-500">
+                      {record.ownerIdNumber || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap">
+                      {record.maker || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap">
+                      {record.model || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap text-slate-500">
+                      {record.modelYear || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap">
+                      {record.majorColor || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap text-slate-500">
+                      {formatDate(record.createdDate)}
+                    </td>
+                    <td className="table-cell whitespace-nowrap">
+                      {formatDate(record.renewalExpiryDate || record.registrationExpiryDate || record.expiryDate)}
+                    </td>
+                    <td className="table-cell whitespace-nowrap text-slate-500">
+                      {record.actualDriverIdNumber || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap">
+                      {record.actualDriverName || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap text-slate-500">
+                      {record.operatorIdNumber || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap">
+                      {record.branchName?.en || record.branchName?.ar || '-'}
+                    </td>
+                    <td className="table-cell whitespace-nowrap">
+                      {getDaysDisplay(daysUntilExpiry)}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </ScrollableTableWrapper>
   );
 };

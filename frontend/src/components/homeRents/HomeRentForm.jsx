@@ -92,7 +92,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
           <input
             type="text"
             required
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.contractNumber}
             onChange={(e) => handleChange('contractNumber', e.target.value)}
             placeholder="e.g., 10241969076"
@@ -103,7 +103,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
           <input
             type="date"
             required
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.contractStartingDate}
             onChange={(e) => handleChange('contractStartingDate', e.target.value)}
           />
@@ -113,7 +113,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
           <input
             type="date"
             required
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.contractEndingDate}
             onChange={(e) => handleChange('contractEndingDate', e.target.value)}
           />
@@ -122,7 +122,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
         <FormField label="Notice Period">
           <input
             type="text"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             placeholder="e.g., 60 days"
             value={formData.notice}
             onChange={(e) => handleChange('notice', e.target.value)}
@@ -133,7 +133,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
           <input
             type="text"
             required
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             placeholder="e.g., 3 Installments"
             value={formData.paymentTerms}
             onChange={(e) => handleChange('paymentTerms', e.target.value)}
@@ -143,7 +143,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
         <FormField label="Payment Type" required>
           <select
             required
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.paymentType}
             onChange={(e) => handleChange('paymentType', e.target.value)}
           >
@@ -156,7 +156,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
         <FormField label="Payment Status" required>
           <select
             required
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.paymentStatus}
             onChange={(e) => handleChange('paymentStatus', e.target.value)}
           >
@@ -172,7 +172,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
             required
             step="0.01"
             min="0"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.amount}
             onChange={(e) => handleChange('amount', e.target.value)}
             placeholder="4000"
@@ -185,7 +185,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
             required
             step="0.01"
             min="0"
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.rentAnnually}
             onChange={(e) => handleChange('rentAnnually', e.target.value)}
             placeholder="45000"
@@ -195,7 +195,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
         <FormField label="Address" required className="sm:col-span-2">
           <textarea
             required
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.address}
             onChange={(e) => handleChange('address', e.target.value)}
             rows="2"
@@ -207,7 +207,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
           <input
             type="text"
             required
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.contactPerson}
             onChange={(e) => handleChange('contactPerson', e.target.value)}
             placeholder="John Doe"
@@ -218,7 +218,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
           <input
             type="text"
             required
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.gtsContact}
             onChange={(e) => handleChange('gtsContact', e.target.value)}
             placeholder="+966550859388"
@@ -227,7 +227,7 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
 
         <FormField label="Comments" className="sm:col-span-2">
           <textarea
-            className="w-full border rounded px-3 py-2"
+            className="input-field"
             value={formData.comments}
             onChange={(e) => handleChange('comments', e.target.value)}
             rows="3"

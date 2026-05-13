@@ -11,18 +11,18 @@ const FormDialog = ({ isOpen, onClose, title, children }) => {
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-lg p-3 sm:p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto m-2 sm:m-0">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">{title}</h2>
+      <div className="bg-white rounded-xl shadow-modal p-4 sm:p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto m-3 sm:m-0 animate-slide-down">
+        <div className="flex justify-between items-center mb-5 pb-4 border-b border-slate-200">
+          <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
+            className="btn-icon"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
         {children}

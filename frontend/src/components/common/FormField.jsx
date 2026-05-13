@@ -1,15 +1,15 @@
 import React from 'react';
 
 const FormField = ({ label, required, highlight, children }) => {
-return (
-<div>
-      <label className={`block text-sm font-medium mb-1 ${highlight ? 'text-red-600' : ''}`}>
-      {label}
-      {required && '*'}
+  return (
+    <div>
+      <label className={`input-label ${highlight ? 'text-rose-600' : ''}`}>
+        {label}
+        {required && <span className="text-rose-500 ml-0.5">*</span>}
       </label>
       {children}
-</div>
-);
+    </div>
+  );
 };
 
 export default FormField;
