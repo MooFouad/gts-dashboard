@@ -3,7 +3,7 @@ import FormField from '../common/FormField';
 import FormActions from '../common/FormActions';
 import AttachmentField from '../common/AttachmentField';
 
-const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null }) => {
+const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null, isSubmitting = false }) => {
   const [formData, setFormData] = useState({
     no: '',
     account: '',
@@ -224,6 +224,7 @@ const ElectricityForm = ({ onSubmit, onCancel, initialData = null, nextNo = null
         onCancel={onCancel}
         submitText={initialData ? "Update Electricity" : "Add Electricity"}
         isEdit={!!initialData}
+        isSubmitting={isSubmitting}
       />
     </form>
   );

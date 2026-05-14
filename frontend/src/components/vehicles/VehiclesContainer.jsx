@@ -17,6 +17,7 @@ const VehiclesContainer = () => {
   const { user } = useAuth();
   const [formDialog, setFormDialog] = useState({ isOpen: false, data: null });
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [syncing, setSyncing] = useState(false);
@@ -67,6 +68,8 @@ const VehiclesContainer = () => {
   };
 
   const handleSubmit = async (formData) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       if (formDialog.data) {
         console.log('Updating vehicle with data:', formDialog.data);
@@ -78,11 +81,12 @@ const VehiclesContainer = () => {
         await addItem(formData);
       }
       setFormDialog({ isOpen: false, data: null });
-      // Refresh data to ensure UI is updated
       await refreshData();
     } catch (err) {
       console.error('Form submission error:', err);
       alert(`Error: ${err.message || 'Failed to save changes. Please try again.'}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -257,6 +261,7 @@ const VehiclesContainer = () => {
           initialData={formDialog.data}
           onSubmit={handleSubmit}
           onCancel={() => setFormDialog({ isOpen: false, data: null })}
+          isSubmitting={isSubmitting}
         />
       </FormDialog>
 

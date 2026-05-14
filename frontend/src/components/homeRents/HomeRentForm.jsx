@@ -3,7 +3,7 @@ import FormField from '../common/FormField';
 import FormActions from '../common/FormActions';
 import AttachmentField from '../common/AttachmentField';
 
-const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
+const HomeRentForm = ({ onSubmit, onCancel, initialData = null, isSubmitting = false }) => {
   const [formData, setFormData] = useState({
     contractNumber: '',
     contractStartingDate: '',
@@ -243,10 +243,11 @@ const HomeRentForm = ({ onSubmit, onCancel, initialData = null }) => {
         </FormField>
       </div>
 
-      <FormActions 
-        onCancel={onCancel} 
-        submitText={initialData ? "Update Contract" : "Add Contract"} 
-        isEdit={!!initialData} 
+      <FormActions
+        onCancel={onCancel}
+        submitText={initialData ? "Update Contract" : "Add Contract"}
+        isEdit={!!initialData}
+        isSubmitting={isSubmitting}
       />
     </form>
   );

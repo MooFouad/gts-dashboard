@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 /**
- * Simple and efficient horizontally scrollable table wrapper
- * with a fixed scrollbar at the bottom of the viewport
+ * Horizontally scrollable table wrapper.
+ * Uses native scrollbar on mobile, and a synced fixed-bottom scrollbar on desktop.
  */
 const ScrollableTableWrapper = ({ children, className = '' }) => {
   const containerRef = useRef(null);
   const scrollbarRef = useRef(null);
-  const [needsScroll, setNeedsScroll] = useState(false);
+  const isSyncing = useRef(false); // shared flag to prevent scroll event loops
+  const [contentWidth, setContentWidth] = useState(0);
   const [leftOffset, setLeftOffset] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -15,141 +16,108 @@ const ScrollableTableWrapper = ({ children, className = '' }) => {
     const container = containerRef.current;
     if (!container) return;
 
-    let animationFrameId = null;
-    let isScrolling = false;
+    const update = () => {
+      setContentWidth(container.scrollWidth);
+      setIsMobile(window.innerWidth < 768);
 
-    // Detect if scrolling is needed and measure sidebar offset
-    const updateScrollState = () => {
-      const hasOverflow = container.scrollWidth > container.clientWidth;
-      setNeedsScroll(hasOverflow);
-
-      // Check if mobile device (hide scrollbar on mobile)
-      const isMobileDevice = window.innerWidth < 768; // Tailwind md breakpoint
-      setIsMobile(isMobileDevice);
-
-      // Measure sidebar offset
       const sidebar = document.querySelector('aside');
       const offset = sidebar ? sidebar.getBoundingClientRect().right : 0;
       setLeftOffset(Math.max(0, offset));
-
-      // Update scrollbar content width if scrollbar exists
-      if (hasOverflow && scrollbarRef.current) {
-        const content = scrollbarRef.current.querySelector('.scrollbar-track');
-        if (content) {
-          content.style.width = `${container.scrollWidth}px`;
-        }
-      }
     };
 
-    // Sync scroll positions
-    const syncFromContainer = () => {
-      if (isScrolling || !scrollbarRef.current) return;
-      isScrolling = true;
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    update();
 
-      animationFrameId = requestAnimationFrame(() => {
-        if (scrollbarRef.current) {
-          scrollbarRef.current.scrollLeft = container.scrollLeft;
-        }
-        isScrolling = false;
-      });
-    };
-
-    // Initial check
-    updateScrollState();
-
-    // Re-check when container becomes visible
-    const intersectionObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          // Container is now visible, re-check scroll state
-          setTimeout(updateScrollState, 50);
-        }
-      });
-    }, { threshold: 0.1 });
-    intersectionObserver.observe(container);
-
-    // Setup resize observer
-    const resizeObserver = new ResizeObserver(updateScrollState);
+    const resizeObserver = new ResizeObserver(update);
     resizeObserver.observe(container);
 
     const sidebar = document.querySelector('aside');
     if (sidebar) resizeObserver.observe(sidebar);
 
-    // Event listeners
-    container.addEventListener('scroll', syncFromContainer, { passive: true });
-    window.addEventListener('resize', updateScrollState);
+    window.addEventListener('resize', update);
 
     return () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
       resizeObserver.disconnect();
-      intersectionObserver.disconnect();
-      container.removeEventListener('scroll', syncFromContainer);
-      window.removeEventListener('resize', updateScrollState);
+      window.removeEventListener('resize', update);
     };
   }, []);
 
-  // Separate effect for scrollbar sync (only when it exists and not on mobile)
+  // Sync: table → bottom scrollbar
   useEffect(() => {
-    if (!needsScroll || isMobile || !scrollbarRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
+    const onContainerScroll = () => {
+      if (isSyncing.current) return;
+      isSyncing.current = true;
+      if (scrollbarRef.current) {
+        scrollbarRef.current.scrollLeft = container.scrollLeft;
+      }
+      isSyncing.current = false;
+    };
+
+    container.addEventListener('scroll', onContainerScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onContainerScroll);
+  }, []);
+
+  // Sync: bottom scrollbar → table
+  useEffect(() => {
     const scrollbar = scrollbarRef.current;
-    let isScrolling = false;
+    if (!scrollbar) return;
 
-    const syncFromScrollbar = () => {
-      if (isScrolling || !containerRef.current) return;
-      isScrolling = true;
-      requestAnimationFrame(() => {
-        if (containerRef.current) {
-          containerRef.current.scrollLeft = scrollbar.scrollLeft;
-        }
-        isScrolling = false;
-      });
+    const onScrollbarScroll = () => {
+      if (isSyncing.current) return;
+      isSyncing.current = true;
+      if (containerRef.current) {
+        containerRef.current.scrollLeft = scrollbar.scrollLeft;
+      }
+      isSyncing.current = false;
     };
 
-    scrollbar.addEventListener('scroll', syncFromScrollbar, { passive: true });
+    scrollbar.addEventListener('scroll', onScrollbarScroll, { passive: true });
+    return () => scrollbar.removeEventListener('scroll', onScrollbarScroll);
+  }, [contentWidth, isMobile]);
 
-    return () => {
-      scrollbar.removeEventListener('scroll', syncFromScrollbar);
-    };
-  }, [needsScroll, isMobile]);
+  const needsScroll = contentWidth > 0 && containerRef.current
+    ? contentWidth > containerRef.current.clientWidth
+    : false;
 
   return (
     <>
-      {/* Main scrollable container */}
       <div
         ref={containerRef}
-        className={`scroll-container-hidden ${className}`}
+        className={`${className}`}
         style={{
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
+          overflowX: isMobile ? 'auto' : 'auto',
+          overflowY: 'visible',
+          // Hide native scrollbar on desktop (we show our custom one at the bottom)
+          ...(isMobile ? {} : {
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }),
         }}
       >
         {children}
       </div>
 
-      {/* Fixed scrollbar at bottom of viewport (hidden on mobile) */}
+      {/* Fixed scrollbar at bottom of viewport — desktop only */}
       {needsScroll && !isMobile && (
         <div
           ref={scrollbarRef}
-          className="fixed-horizontal-scrollbar"
           style={{
             position: 'fixed',
             bottom: 0,
             left: `${leftOffset}px`,
             right: 0,
-            height: '20px',
+            height: '14px',
             overflowX: 'auto',
             overflowY: 'hidden',
             zIndex: 1000,
-            backgroundColor: '#f3f4f6',
-            borderTop: '2px solid #3b82f6',
-            boxShadow: '0 -4px 6px rgba(0, 0, 0, 0.1)',
-            transition: 'left 0.3s ease'
+            backgroundColor: '#f1f5f9',
+            borderTop: '1px solid #cbd5e1',
           }}
         >
-          <div className="scrollbar-track" style={{ height: '1px' }} />
+          {/* Ghost element that matches the table's scroll width */}
+          <div style={{ width: `${contentWidth}px`, height: '1px' }} />
         </div>
       )}
     </>

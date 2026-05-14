@@ -3,7 +3,7 @@ import FormField from '../common/FormField';
 import FormActions from '../common/FormActions';
 import AttachmentField from '../common/AttachmentField';
 
-const VehicleForm = ({ onSubmit, onCancel, initialData = null }) => {
+const VehicleForm = ({ onSubmit, onCancel, initialData = null, isSubmitting = false }) => {
   const [formData, setFormData] = useState({
     plateNumber: '',
     registrationType: '',
@@ -194,6 +194,7 @@ const VehicleForm = ({ onSubmit, onCancel, initialData = null }) => {
         onCancel={onCancel}
         submitText="Add Vehicle"
         isEdit={!!initialData}
+        isSubmitting={isSubmitting}
       />
     </form>
   );

@@ -13,6 +13,7 @@ import { exportHomeRentsToExcel } from '../../utils/excel/excelUtils';
 const HomeRentsContainer = () => {
   const { user } = useAuth();
   const [formDialog, setFormDialog] = useState({ isOpen: false, data: null });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -60,6 +61,8 @@ const HomeRentsContainer = () => {
   };
 
   const handleSubmit = async (formData) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       if (formDialog.data) {
         await updateItem(formDialog.data._id, {
@@ -74,6 +77,8 @@ const HomeRentsContainer = () => {
     } catch (err) {
       console.error('Form submission error:', err);
       alert(`Error: ${err.message || 'Failed to save changes. Please try again.'}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -174,6 +179,7 @@ const HomeRentsContainer = () => {
           initialData={formDialog.data}
           onSubmit={handleSubmit}
           onCancel={() => setFormDialog({ isOpen: false, data: null })}
+          isSubmitting={isSubmitting}
         />
       </FormDialog>
 

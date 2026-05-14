@@ -12,6 +12,7 @@ import { exportElectricityToExcel } from '../../utils/excel/excelUtils';
 const ElectricityContainer = () => {
   const [formDialog, setFormDialog] = useState({ isOpen: false, data: null });
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const { data: items, addItem, updateItem, deleteItem, loading, error, refreshData, pagination } = useDataManagement('electricity');
@@ -55,6 +56,8 @@ const ElectricityContainer = () => {
   };
 
   const handleSubmit = async (formData) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       if (formDialog.data) {
         await updateItem(formDialog.data._id, {
@@ -69,6 +72,8 @@ const ElectricityContainer = () => {
     } catch (err) {
       console.error('Form submission error:', err);
       alert(`Error: ${err.message || 'Failed to save changes. Please try again.'}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -165,6 +170,7 @@ const ElectricityContainer = () => {
           nextNo={formDialog.nextNo}
           onSubmit={handleSubmit}
           onCancel={() => setFormDialog({ isOpen: false, data: null })}
+          isSubmitting={isSubmitting}
         />
       </FormDialog>
 
